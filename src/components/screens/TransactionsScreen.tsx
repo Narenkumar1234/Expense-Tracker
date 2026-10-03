@@ -14,9 +14,20 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<'All' | 'Expenses' | 'Income' | 'This Month' | 'Pending'>('All');
-  const [selectedMonth, setSelectedMonth] = useState('October 2024');
-  const [showFiltersModal, setShowFiltersModal] = useState(false);
   const [exportedToast, setExportedToast] = useState(false);
+
+  // Generate previous 1 year of months (12 months from current date)
+  const previousYearMonths = useMemo(() => {
+    const list: string[] = [];
+    const now = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      list.push(d.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }));
+    }
+    return list;
+  }, []);
+
+  const [selectedMonth, setSelectedMonth] = useState(previousYearMonths[0]);
 
   // Filter transactions
   const filteredTransactions = useMemo(() => {
@@ -81,41 +92,26 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
-      {/* Search Bar & Filters Button */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-[#bbcabf] pointer-events-none">
-            search
-          </span>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search by merchant, note..."
-            className="w-full h-11 bg-[#171b26] border border-white/[0.06] rounded-xl pl-10 pr-8 text-xs text-[#dfe2f1] placeholder:text-[#bbcabf]/50 focus:outline-none focus:border-[#4edea3]/50 focus:ring-1 focus:ring-[#4edea3]/30 transition-all"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-3 text-[#bbcabf] hover:text-white"
-            >
-              <span className="material-symbols-outlined text-[16px]">close</span>
-            </button>
-          )}
-        </div>
-
-        <button
-          onClick={() => setShowFiltersModal(!showFiltersModal)}
-          className="h-11 px-3.5 rounded-xl bg-[#171b26] hover:bg-[#262a35] border border-white/[0.06] flex items-center gap-1.5 text-xs font-semibold text-[#dfe2f1] transition-colors active:scale-95"
-        >
-          <span className="material-symbols-outlined text-[17px] text-[#4edea3]">
-            tune
-          </span>
-          <span>Filters</span>
-          <span className="w-4 h-4 rounded-full bg-[#10b981]/20 text-[#4edea3] text-[10px] flex items-center justify-center font-bold">
-            2
-          </span>
-        </button>
+      {/* Search Bar (Full Width) */}
+      <div className="relative w-full">
+        <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-[#bbcabf] pointer-events-none">
+          search
+        </span>
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by merchant, note, account..."
+          className="w-full h-11 bg-[#171b26] border border-white/[0.06] rounded-xl pl-10 pr-8 text-xs text-[#dfe2f1] placeholder:text-[#bbcabf]/50 focus:outline-none focus:border-[#4edea3]/50 focus:ring-1 focus:ring-[#4edea3]/30 transition-all"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-2.5 top-3 text-[#bbcabf] hover:text-white"
+          >
+            <span className="material-symbols-outlined text-[16px]">close</span>
+          </button>
+        )}
       </div>
 
       {/* Filter Horizontal Pills */}
@@ -138,17 +134,31 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         ))}
       </div>
 
-      {/* Month Navigator & Export */}
+      {/* Month Dropdown (Previous 1 Year) & Export */}
       <div className="flex items-center justify-between px-1">
-        <button className="flex items-center gap-1.5 text-sm font-bold text-[#dfe2f1] hover:text-[#4edea3] transition-colors">
-          <span className="material-symbols-outlined text-[18px] text-[#4edea3]">calendar_month</span>
-          <span>{selectedMonth}</span>
-          <span className="material-symbols-outlined text-[16px] text-[#bbcabf]">expand_more</span>
-        </button>
+        <div className="relative inline-flex items-center">
+          <div className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-[#171b26] border border-white/[0.06] text-xs font-bold text-[#dfe2f1]">
+            <span className="material-symbols-outlined text-[18px] text-[#4edea3]">calendar_month</span>
+            <select
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="bg-transparent text-xs font-bold text-[#dfe2f1] appearance-none focus:outline-none pr-5 cursor-pointer"
+            >
+              {previousYearMonths.map((m) => (
+                <option key={m} value={m} className="bg-[#171b26] text-[#dfe2f1] py-1">
+                  {m}
+                </option>
+              ))}
+            </select>
+            <span className="material-symbols-outlined text-[16px] text-[#bbcabf] absolute right-2.5 pointer-events-none">
+              expand_more
+            </span>
+          </div>
+        </div>
 
         <button
           onClick={handleExport}
-          className="px-3 py-1.5 rounded-lg bg-[#1c1f2a] hover:bg-[#262a35] border border-white/[0.06] text-xs font-semibold text-[#dfe2f1] flex items-center gap-1.5 active:scale-95 transition-all"
+          className="px-3 py-1.5 rounded-lg bg-[#1c1f2a] hover:bg-[#262a35] border border-white/[0.06] text-xs font-semibold text-[#dfe2f1] flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
         >
           <span className="material-symbols-outlined text-[16px] text-[#4edea3]">download</span>
           <span>Export</span>
@@ -156,44 +166,29 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
       </div>
 
       {exportedToast && (
-        <div className="p-2.5 rounded-xl bg-[#10b981]/20 border border-[#10b981]/40 text-xs text-[#4edea3] font-semibold flex items-center gap-2 animate-in fade-in">
-          <span className="material-symbols-outlined text-[16px]">check_circle</span>
-          <span>Ledger export generated and downloaded successfully!</span>
+        <div className="py-2 px-3 rounded-xl bg-cyan-500/20 border border-cyan-500/40 text-xs text-cyan-300 font-bold flex items-center justify-center gap-1.5 animate-in fade-in">
+          <span className="material-symbols-outlined text-[16px]">download_done</span>
+          <span>Exported</span>
         </div>
       )}
 
-      {/* Ledger Telemetry Card */}
-      <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4.5 shadow-lg space-y-3">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-bold uppercase tracking-wider text-[#bbcabf]">
-            LEDGER TELEMETRY
-          </span>
-          <span className="text-xs font-bold text-[#4edea3]">
-            {filteredTransactions.length} Transactions
+      {/* Summary Card */}
+      <div className="rounded-xl bg-[#1c1f2a] border border-white/[0.04] p-3.5 shadow-md flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-wider text-[#dfe2f1]">
+            Summary
           </span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <span className="text-[11px] text-[#bbcabf] block">Total Inflow</span>
-            <div className="text-base font-bold font-mono text-[#4edea3] mt-0.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
-              <span>+₹64,200.00</span>
-            </div>
+        <div className="flex items-center gap-3.5 text-xs font-mono font-bold">
+          <div className="flex items-center gap-1 text-[#4edea3]">
+            <span className="material-symbols-outlined text-[15px]">arrow_downward</span>
+            <span>+₹64,200</span>
           </div>
-          <div>
-            <span className="text-[11px] text-[#bbcabf] block">Total Outflow</span>
-            <div className="text-base font-bold font-mono text-[#ff7886] mt-0.5 flex items-center gap-1">
-              <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
-              <span>-₹31,800.50</span>
-            </div>
+          <div className="flex items-center gap-1 text-[#ff7886]">
+            <span className="material-symbols-outlined text-[15px]">arrow_upward</span>
+            <span>-₹31,800</span>
           </div>
-        </div>
-
-        {/* Dual Progress Bar */}
-        <div className="w-full h-2 rounded-full bg-[#0f131d] overflow-hidden flex gap-0.5">
-          <div className="h-full bg-[#4edea3] rounded-l-full" style={{ width: '67%' }} />
-          <div className="h-full bg-[#ff7886] rounded-r-full" style={{ width: '33%' }} />
         </div>
       </div>
 
@@ -305,6 +300,8 @@ interface TransactionRowProps {
 }
 
 const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
+  const [showRecurringOverlay, setShowRecurringOverlay] = useState(false);
+
   return (
     <div
       onClick={onClick}
@@ -317,19 +314,58 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
           </span>
         </div>
         <div>
-          <div className="text-sm font-semibold text-[#dfe2f1] group-hover:text-white transition-colors">
-            {tx.merchant}
+          <div className="flex items-center min-w-0">
+            <span className="text-sm font-semibold text-[#dfe2f1] group-hover:text-white transition-colors truncate">
+              {tx.merchant}
+            </span>
+            {tx.isRecurring && (
+              <span className="relative inline-flex items-center ml-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRecurringOverlay(!showRecurringOverlay);
+                  }}
+                  className="text-sm leading-none text-[#c0c1ff] hover:text-[#4edea3] transition-colors focus:outline-none"
+                  title="Recurring transaction"
+                  aria-label="Recurring details"
+                >
+                  <span className="material-symbols-outlined text-[15px] align-middle select-none">
+                    sync
+                  </span>
+                </button>
+
+                {/* On-click overlay popover */}
+                {showRecurringOverlay && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowRecurringOverlay(false);
+                      }}
+                    />
+                    <div
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-[#171b26] border border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      <div className="flex items-center gap-1.5 font-bold text-[#4edea3] mb-0.5">
+                        <span className="material-symbols-outlined text-[14px]">sync</span>
+                        <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month Plan` : 'Recurring Auto-debit'}</span>
+                      </div>
+                      <div className="text-[11px] text-[#bbcabf] font-mono">
+                        {tx.monthlyEquivalent ? `₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-1.5 text-[11px] text-[#bbcabf] mt-0.5">
             <span className="px-1.5 py-0.2 rounded bg-white/5 text-[9px] font-bold tracking-wider text-slate-300 uppercase">
               {tx.category}
             </span>
-            {tx.isRecurring && (
-              <span className="px-1.5 py-0.2 rounded bg-[#3131c0]/25 text-[#c0c1ff] text-[9px] font-bold tracking-wider uppercase flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[10px]">sync</span>
-                {tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Mo Plan` : 'Recurring'}
-              </span>
-            )}
             <span>•</span>
             <span>{tx.time}</span>
           </div>

@@ -43,14 +43,14 @@ export default function App() {
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [isCreateBudgetOpen, setIsCreateBudgetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'saved' | 'deleted' | 'updated' } | null>(null);
   const [deviceFrameMode, setDeviceFrameMode] = useState(false);
 
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
+  const showToast = (message: string, type: 'saved' | 'deleted' | 'updated' = 'saved') => {
+    setToast({ message, type });
     setTimeout(() => {
-      setToastMessage(null);
-    }, 3000);
+      setToast(null);
+    }, 2000);
   };
 
   // Handlers
@@ -79,30 +79,28 @@ export default function App() {
       );
     }
 
-    showToast(
-      `${newTx.amount < 0 ? 'Expense' : 'Income'} of ₹${Math.abs(newTx.amount).toLocaleString('en-IN')} added!`
-    );
+    showToast('Saved', 'saved');
   };
 
   const handleDeleteTransaction = (id: string) => {
     setTransactions((prev) => prev.filter((t) => t.id !== id));
-    showToast('Transaction removed from ledger');
+    showToast('Deleted', 'deleted');
   };
 
   const handleSaveCard = (newCard: PaymentCard) => {
     setCards([newCard, ...cards]);
-    showToast(`Card ${newCard.bankName} ${newCard.variant} secured & linked!`);
+    showToast('Linked', 'saved');
     setCurrentScreen('profile');
   };
 
   const handleSaveBudget = (newBudget: BudgetItem) => {
     setBudgets([...budgets, newBudget]);
-    showToast(`Budget for ${newBudget.name} created!`);
+    showToast('Created', 'saved');
   };
 
   const handleUpdateUser = (updated: Partial<UserProfile>) => {
     setUser({ ...user, ...updated });
-    showToast('Preferences updated in Aura Vault');
+    showToast('Updated', 'updated');
   };
 
   return (
@@ -153,7 +151,6 @@ export default function App() {
                 onOpenQuickAdd={handleOpenQuickAdd}
                 onNavigate={(screen) => setCurrentScreen(screen)}
                 onSelectTransaction={(tx) => setSelectedTx(tx)}
-                onOpenForecastModal={() => setIsNotificationsOpen(true)}
               />
             )}
 
@@ -178,13 +175,18 @@ export default function App() {
             )}
 
             {currentScreen === 'profile' && (
-              <ProfileScreen
-                user={user}
-                cards={cards}
-                onOpenAddCard={() => setCurrentScreen('addCard')}
-                onUpdateUser={handleUpdateUser}
-                onBack={() => setCurrentScreen('dashboard')}
-              />
+              <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm backdrop-fade-in">
+                <div className="absolute inset-0 -z-10" onClick={() => setCurrentScreen('dashboard')} />
+                <div className="w-full max-w-md h-full bg-[#0f131d] overflow-y-auto no-scrollbar border-l border-white/10 shadow-2xl drawer-slide-right">
+                  <ProfileScreen
+                    user={user}
+                    cards={cards}
+                    onOpenAddCard={() => setCurrentScreen('addCard')}
+                    onUpdateUser={handleUpdateUser}
+                    onBack={() => setCurrentScreen('dashboard')}
+                  />
+                </div>
+              </div>
             )}
 
             {currentScreen === 'addCard' && (
@@ -247,10 +249,20 @@ export default function App() {
       )}
 
       {/* Floating Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 rounded-full bg-[#10b981] text-[#002113] font-bold text-xs shadow-2xl flex items-center gap-2 animate-in fade-in slide-in-from-top-4">
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-          <span>{toastMessage}</span>
+      {toast && (
+        <div
+          className={`fixed top-18 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full font-bold text-xs shadow-2xl flex items-center gap-1.5 transition-all animate-in fade-in slide-in-from-top-4 ${
+            toast.type === 'deleted'
+              ? 'bg-[#ff5469] text-white shadow-[0_4px_20px_rgba(255,84,105,0.45)]'
+              : toast.type === 'updated'
+              ? 'bg-[#3b82f6] text-white shadow-[0_4px_20px_rgba(59,130,246,0.45)]'
+              : 'bg-[#10b981] text-[#002113] shadow-[0_4px_20px_rgba(16,185,129,0.45)]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[17px] font-bold">
+            {toast.type === 'deleted' ? 'delete' : toast.type === 'updated' ? 'sync' : 'check'}
+          </span>
+          <span>{toast.message}</span>
         </div>
       )}
     </div>

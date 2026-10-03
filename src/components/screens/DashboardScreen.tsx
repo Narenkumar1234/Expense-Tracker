@@ -7,7 +7,6 @@ interface DashboardScreenProps {
   onOpenQuickAdd: (type?: 'expense' | 'income') => void;
   onNavigate: (screen: 'dashboard' | 'analytics' | 'budgets' | 'transactions') => void;
   onSelectTransaction: (tx: Transaction) => void;
-  onOpenForecastModal: () => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -16,11 +15,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   onOpenQuickAdd,
   onNavigate,
   onSelectTransaction,
-  onOpenForecastModal,
 }) => {
   const [isBalanceHidden, setIsBalanceHidden] = useState(false);
   const [selectedDayIndex, setSelectedDayIndex] = useState(3); // Thursday active
-  const [tactileFeedback, setTactileFeedback] = useState(true);
+  const [activeRecurringOverlay, setActiveRecurringOverlay] = useState<string | null>(null);
 
   // Weekly spend data (M, T, W, T, F, S, S)
   const weekDays = [
@@ -44,23 +42,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
 
   const recentTransactions = transactions.slice(0, 4);
 
+  // Income vs Spend calculation
+  const monthlyIncome = user.monthlyBaseIncome || 185000;
+  const spentSoFar = 31800.50;
+  const incomeSpentPercent = Math.min(100, Math.round((spentSoFar / monthlyIncome) * 100 * 10) / 10);
+  const unspentIncome = monthlyIncome - spentSoFar;
+
   return (
     <div className="w-full max-w-md mx-auto px-4 pb-28 pt-3 space-y-4">
-      {/* Top Status & Greeting */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#4edea3] opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10b981]"></span>
-          </span>
-          <span className="text-xs text-[#bbcabf] font-medium">Vault Sync active</span>
-        </div>
-        <span className="px-2.5 py-0.5 rounded-full bg-[#3131c0]/20 border border-[#c0c1ff]/30 text-[#c0c1ff] text-[10px] font-bold tracking-wider uppercase">
-          {user.tier}
-        </span>
-      </div>
-
-      <div className="flex items-center justify-between">
+      {/* Greeting */}
+      <div className="flex items-center justify-between pt-1">
         <h1 className="text-2xl font-bold tracking-tight text-[#dfe2f1]">
           Good afternoon, {user.name.split(' ')[0]}
         </h1>
@@ -156,123 +147,50 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         </div>
       </div>
 
-      {/* Quick Action Buttons (Tactile Mode) */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between px-1">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#bbcabf]">
-            Actions
-          </span>
-          <button
-            onClick={() => setTactileFeedback(!tactileFeedback)}
-            className="text-[11px] text-[#bbcabf] hover:text-[#4edea3] transition-colors flex items-center gap-1"
-          >
-            <span>Tactile Mode</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${tactileFeedback ? 'bg-[#4edea3]' : 'bg-slate-600'}`} />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-4 gap-2.5">
-          {/* Expense */}
-          <button
-            onClick={() => onOpenQuickAdd('expense')}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.06] hover:bg-[#262a35] hover:border-white/10 active:scale-95 transition-all text-[#dfe2f1] group"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#ff7886]/10 text-[#ff7886] flex items-center justify-center mb-1.5 group-hover:bg-[#ff7886]/20 transition-colors">
-              <span className="material-symbols-outlined text-[20px]">
-                north_east
-              </span>
-            </div>
-            <span className="text-xs font-medium">Expense</span>
-          </button>
-
-          {/* Income */}
-          <button
-            onClick={() => onOpenQuickAdd('income')}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.06] hover:bg-[#262a35] hover:border-white/10 active:scale-95 transition-all text-[#dfe2f1] group"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#10b981]/15 text-[#4edea3] flex items-center justify-center mb-1.5 group-hover:bg-[#10b981]/25 transition-colors">
-              <span className="material-symbols-outlined text-[20px]">
-                south_west
-              </span>
-            </div>
-            <span className="text-xs font-medium">Income</span>
-          </button>
-
-          {/* Add */}
-          <button
-            onClick={() => onOpenQuickAdd()}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#1c1f2a] border border-[#10b981]/30 hover:bg-[#10b981]/20 active:scale-95 transition-all text-[#4edea3] group shadow-[0_0_16px_rgba(16,185,129,0.15)]"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#10b981] text-[#002113] flex items-center justify-center mb-1.5 font-bold shadow-[0_0_12px_rgba(16,185,129,0.4)]">
-              <span className="material-symbols-outlined text-[22px]">
-                add
-              </span>
-            </div>
-            <span className="text-xs font-bold text-[#4edea3]">Add</span>
-          </button>
-
-          {/* Insights */}
-          <button
-            onClick={() => onNavigate('analytics')}
-            className="flex flex-col items-center justify-center p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.06] hover:bg-[#262a35] hover:border-white/10 active:scale-95 transition-all text-[#dfe2f1] group"
-          >
-            <div className="w-9 h-9 rounded-full bg-[#c0c1ff]/15 text-[#c0c1ff] flex items-center justify-center mb-1.5 group-hover:bg-[#c0c1ff]/25 transition-colors">
-              <span className="material-symbols-outlined text-[20px]">
-                monitoring
-              </span>
-            </div>
-            <span className="text-xs font-medium">Insights</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Monthly Pace Target Card */}
+      {/* Monthly Spend Card */}
       <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4.5 shadow-lg space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#10b981]/15 text-[#4edea3] flex items-center justify-center">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-lg bg-[#10b981]/15 text-[#4edea3] flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[20px]">
-                token
+                pie_chart
               </span>
             </div>
-            <div>
-              <div className="text-sm font-semibold text-[#dfe2f1]">
-                Monthly Pace Target
-              </div>
-              <div className="text-[11px] text-[#bbcabf]">
-                12 days left in cycle
+            <div className="min-w-0 truncate">
+              <div className="text-sm font-semibold text-[#dfe2f1] truncate">
+                Monthly Spend
               </div>
             </div>
           </div>
-          <span className="px-2 py-0.5 rounded-full bg-[#10b981]/20 text-[#4edea3] text-xs font-bold">
-            70% spent
+          <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 rounded-full bg-[#10b981]/20 text-[#4edea3] text-xs font-bold font-mono">
+            {incomeSpentPercent}% spent
           </span>
         </div>
 
-        {/* Progress Bar (Dual tone emerald to coral) */}
+        {/* Progress Bar */}
         <div className="space-y-1.5">
           <div className="w-full h-2.5 rounded-full bg-[#0f131d] overflow-hidden flex">
             <div
-              className="h-full bg-gradient-to-r from-[#4edea3] via-[#10b981] to-[#ff7886] rounded-full"
-              style={{ width: '70%' }}
+              className="h-full bg-gradient-to-r from-[#4edea3] via-[#10b981] to-[#34d399] rounded-full transition-all duration-500"
+              style={{ width: `${incomeSpentPercent}%` }}
             />
           </div>
           <div className="flex items-center justify-between text-xs font-mono">
             <span className="text-[#dfe2f1]">Spent ₹31,800.50</span>
-            <span className="text-[#bbcabf]">Limit ₹45,000.00</span>
+            <span className="text-[#bbcabf]">Income ₹{monthlyIncome.toLocaleString('en-IN')}</span>
           </div>
         </div>
 
-        {/* Safe to spend remainder */}
+        {/* Retained unspent remainder */}
         <div className="pt-2 border-t border-white/[0.04] flex items-center justify-between">
           <div className="flex items-center gap-1.5 text-xs text-[#bbcabf]">
             <span className="material-symbols-outlined text-[16px] text-[#4edea3]">
-              verified_user
+              savings
             </span>
-            <span>Safe-to-spend remainder</span>
+            <span>Retained Income Balance</span>
           </div>
           <span className="text-sm font-mono font-bold text-[#4edea3]">
-            ₹13,199.50
+            ₹{unspentIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </span>
         </div>
       </div>
@@ -366,19 +284,58 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                   </span>
                 </div>
                 <div>
-                  <div className="text-sm font-semibold text-[#dfe2f1]">
-                    {tx.merchant}
+                  <div className="flex items-center min-w-0">
+                    <span className="text-sm font-semibold text-[#dfe2f1] truncate">
+                      {tx.merchant}
+                    </span>
+                    {tx.isRecurring && (
+                      <span className="relative inline-flex items-center ml-1.5 shrink-0">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveRecurringOverlay(activeRecurringOverlay === tx.id ? null : tx.id);
+                          }}
+                          className="text-sm leading-none text-[#c0c1ff] hover:text-[#4edea3] transition-colors focus:outline-none"
+                          title="Recurring transaction"
+                          aria-label="Recurring details"
+                        >
+                          <span className="material-symbols-outlined text-[15px] align-middle select-none">
+                            sync
+                          </span>
+                        </button>
+
+                        {/* On-click overlay popover */}
+                        {activeRecurringOverlay === tx.id && (
+                          <>
+                            <div
+                              className="fixed inset-0 z-40"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveRecurringOverlay(null);
+                              }}
+                            />
+                            <div
+                              onClick={(e) => e.stopPropagation()}
+                              className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-[#171b26] border border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
+                            >
+                              <div className="flex items-center gap-1.5 font-bold text-[#4edea3] mb-0.5">
+                                <span className="material-symbols-outlined text-[14px]">sync</span>
+                                <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month Plan` : 'Recurring Auto-debit'}</span>
+                              </div>
+                              <div className="text-[11px] text-[#bbcabf] font-mono">
+                                {tx.monthlyEquivalent ? `₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1.5 text-[11px] text-[#bbcabf] mt-0.5">
                     <span className="px-1.5 py-0.2 rounded bg-white/5 text-[9px] font-bold tracking-wider text-slate-300 uppercase">
                       {tx.category}
                     </span>
-                    {tx.isRecurring && (
-                      <span className="px-1.5 py-0.2 rounded bg-[#3131c0]/25 text-[#c0c1ff] text-[9px] font-bold tracking-wider uppercase flex items-center gap-0.5">
-                        <span className="material-symbols-outlined text-[10px]">sync</span>
-                        {tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Mo Plan` : 'Recurring'}
-                      </span>
-                    )}
                     <span>•</span>
                     <span>{tx.time}</span>
                   </div>
@@ -400,31 +357,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Aura AI Forecast Banner */}
-      <div className="rounded-2xl bg-gradient-to-r from-[#171b26] to-[#1c1f2a] border border-violet-500/20 p-3.5 shadow-lg flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#3131c0]/20 text-[#c0c1ff] flex items-center justify-center shadow-inner">
-            <span className="material-symbols-outlined text-[20px]">
-              auto_awesome
-            </span>
-          </div>
-          <div>
-            <div className="text-xs font-semibold text-[#dfe2f1]">
-              Aura AI Forecast
-            </div>
-            <div className="text-[11px] text-[#bbcabf] line-clamp-1">
-              Recurring bill 'NordVPN' (₹499/m... due in 3 days)
-            </div>
-          </div>
-        </div>
-        <button
-          onClick={onOpenForecastModal}
-          className="px-3 py-1.5 rounded-lg bg-[#262a35] hover:bg-[#313540] text-xs font-semibold text-[#dfe2f1] active:scale-95 transition-all shadow-sm"
-        >
-          Review
-        </button>
       </div>
     </div>
   );

@@ -209,17 +209,56 @@ html:not(.dark) .border-white\/20 {
 
 /* Header & Bottom Navigation */
 html.light header,
-html:not(.dark) header {
-  background-color: rgba(255, 255, 255, 0.94) !important;
+html.light .sticky.top-0,
+html.light .bg-\[\#0f131d\]\/90,
+html:not(.dark) header,
+html:not(.dark) .sticky.top-0,
+html:not(.dark) .bg-\[\#0f131d\]\/90 {
+  background-color: rgba(255, 255, 255, 0.96) !important;
   border-bottom-color: #e2e8f0 !important;
   box-shadow: 0 1px 8px rgba(15, 23, 42, 0.04) !important;
 }
 
 html.light nav,
 html:not(.dark) nav {
-  background-color: rgba(255, 255, 255, 0.96) !important;
+  background-color: transparent !important;
+  border-top-color: transparent !important;
+  box-shadow: none !important;
+}
+
+html.light .nav-bar-bg,
+html:not(.dark) .nav-bar-bg {
+  background-color: #ffffff !important;
   border-top-color: #e2e8f0 !important;
-  box-shadow: 0 -4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+html.light .nav-scoop-fill,
+html:not(.dark) .nav-scoop-fill {
+  fill: #ffffff !important;
+}
+
+html.light .nav-scoop-stroke,
+html:not(.dark) .nav-scoop-stroke {
+  stroke: #e2e8f0 !important;
+}
+
+/* Ensure bank tiles permanently retain their authentic gradient colors and white text in all themes */
+.bank-tile,
+html.light .bank-tile,
+html:not(.dark) .bank-tile {
+  color: #ffffff !important;
+}
+
+.bank-tile *,
+html.light .bank-tile *,
+html:not(.dark) .bank-tile * {
+  color: #ffffff !important;
+}
+
+.bank-tile .text-white\/80,
+html.light .bank-tile .text-white\/80,
+html:not(.dark) .bank-tile .text-white\/80 {
+  color: rgba(255, 255, 255, 0.8) !important;
 }
 
 /* Form Inputs & Selects */
@@ -312,4 +351,46 @@ html:not(.dark) .rounded-full.bg-\[\#0f131d\] {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Sliding & Backdrop Animation Keyframes */
+@keyframes drawerSlideRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes sheetSlideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes backdropFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer-slide-right {
+  animation: drawerSlideRight 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+.sheet-slide-up {
+  animation: sheetSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform;
+}
+
+.backdrop-fade-in {
+  animation: backdropFadeIn 0.25s ease-out forwards;
 }

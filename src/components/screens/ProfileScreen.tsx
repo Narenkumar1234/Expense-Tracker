@@ -34,50 +34,59 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
   const handleSavePreferences = () => {
     setIsSaving(true);
+    onUpdateUser({
+      billRemindersActive: billReminders,
+      monthlyBaseIncome: monthlyIncome,
+      defaultCardId,
+    });
     setTimeout(() => {
       setIsSaving(false);
       setSaveSuccess(true);
-      onUpdateUser({
-        billRemindersActive: billReminders,
-        monthlyBaseIncome: monthlyIncome,
-        defaultCardId,
-      });
-
       setTimeout(() => {
-        setSaveSuccess(false);
-      }, 2000);
-    }, 800);
+        onBack();
+      }, 350);
+    }, 300);
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
-      {/* Top Title Bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+    <div className="w-full max-w-md mx-auto min-h-full pb-16">
+      {/* Sticky Top Bar: Profile & Financial Info with Tick Mark on Right */}
+      <header className="modal-header sticky top-0 z-30 bg-[#0f131d]/90 backdrop-blur-xl border-b border-white/[0.04]">
+        <div className="h-16 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onBack}
+              className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#dfe2f1] hover:text-[#4edea3] transition-colors"
+              aria-label="Back"
+            >
+              <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+            </button>
+            <div className="w-7 h-7 rounded-lg bg-[#171b26] border border-emerald-500/30 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[#4edea3] text-[18px]">
+                manage_accounts
+              </span>
+            </div>
+            <h1 className="text-base font-bold text-[#dfe2f1]">
+              Profile & Financial Info
+            </h1>
+          </div>
+
           <button
-            onClick={onBack}
-            className="w-9 h-9 -ml-1 rounded-full flex items-center justify-center text-[#dfe2f1] hover:text-[#4edea3] transition-colors"
+            onClick={handleSavePreferences}
+            disabled={isSaving}
+            className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#059669] via-[#10b981] to-[#4edea3] text-[#002113] flex items-center justify-center shadow-[0_0_12px_rgba(16,185,129,0.45)] hover:scale-105 active:scale-95 transition-all cursor-pointer font-bold"
+            title="Save & Close"
+            aria-label="Save and close"
           >
-            <span className="material-symbols-outlined text-[22px]">arrow_back</span>
+            <span className={`material-symbols-outlined text-[18px] font-bold ${isSaving ? 'animate-spin' : ''}`}>
+              {isSaving ? 'progress_activity' : 'check'}
+            </span>
           </button>
-          <span className="material-symbols-outlined text-[#4edea3] text-[22px]">
-            manage_accounts
-          </span>
-          <h1 className="text-base font-bold text-[#dfe2f1]">
-            Profile & Financial Info
-          </h1>
         </div>
+      </header>
 
-        <button
-          onClick={handleSavePreferences}
-          className="w-9 h-9 rounded-full bg-[#262a35] hover:bg-[#313540] text-[#dfe2f1] flex items-center justify-center transition-all shadow-sm"
-          title="Account Settings"
-        >
-          <span className="material-symbols-outlined text-[18px]">tune</span>
-        </button>
-      </div>
-
-      {/* User Profile Header Card */}
+      <div className="px-4 pt-3 space-y-4">
+        {/* User Profile Header Card */}
       <div className="relative overflow-hidden rounded-2xl bg-[#171b26] border border-white/[0.06] p-4.5 shadow-xl">
         <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full bg-[#10b981]/15 blur-2xl pointer-events-none" />
 
@@ -100,9 +109,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-lg font-bold text-[#dfe2f1] truncate">
                 {user.name}
-              </span>
-              <span className="px-2 py-0.5 rounded-full bg-[#3131c0]/20 border border-[#c0c1ff]/30 text-[#c0c1ff] text-[10px] font-bold">
-                {user.tier}
               </span>
             </div>
             <span className="text-xs text-[#bbcabf] truncate mt-0.5 font-mono">
@@ -127,9 +133,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </span>
             <h2 className="text-sm font-bold text-[#dfe2f1]">Income & Allocation</h2>
           </div>
-          <span className="text-[10px] uppercase font-bold tracking-wider text-[#bbcabf]">
-            BASE SETUP
-          </span>
         </div>
 
         <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4.5 shadow-md space-y-4">
@@ -144,10 +147,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <button
               onClick={() => setEditingIncome(!editingIncome)}
-              className="px-3 py-1.5 rounded-full bg-[#262a35] hover:bg-[#313540] text-xs font-semibold text-[#4edea3] flex items-center gap-1 active:scale-95 transition-all"
+              className="w-8 h-8 rounded-full bg-[#262a35] hover:bg-[#313540] text-[#4edea3] flex items-center justify-center active:scale-95 transition-all shadow-sm"
+              title="Edit Income"
+              aria-label="Edit Income"
             >
-              <span className="material-symbols-outlined text-[14px]">edit</span>
-              <span>Edit / Adjust</span>
+              <span className="material-symbols-outlined text-[16px]">edit</span>
             </button>
           </div>
 
@@ -243,7 +247,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* SECTION 2: Payment Methods & Cards (3) */}
+      {/* SECTION 2: Cards */}
       <div className="space-y-2.5 pt-2">
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-1.5">
@@ -251,50 +255,82 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               credit_card
             </span>
             <h2 className="text-sm font-bold text-[#dfe2f1]">
-              Payment Methods & Cards ({cards.length})
+              Cards ({cards.length})
             </h2>
           </div>
 
           <button
             onClick={onOpenAddCard}
-            className="px-3 py-1.5 rounded-full bg-[#10b981] hover:brightness-110 active:scale-95 text-[#002113] text-xs font-bold flex items-center gap-1 transition-all shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+            className="w-8 h-8 rounded-full bg-[#10b981] hover:brightness-110 active:scale-95 text-[#002113] flex items-center justify-center transition-all shadow-[0_0_12px_rgba(16,185,129,0.3)]"
+            aria-label="Add Card"
+            title="Add Card"
           >
-            <span className="material-symbols-outlined text-[16px]">add</span>
-            <span>Add Card</span>
+            <span className="material-symbols-outlined text-[18px] font-bold">add</span>
           </button>
         </div>
 
         <div className="space-y-2.5">
           {cards.map((card) => {
             const isCredit = card.type === 'credit';
+            const name = card.bankName.toLowerCase();
+            let cardBg = 'bg-gradient-to-tr from-[#111318] via-[#1e2330] to-[#262c3d] border-emerald-500/20';
+            let badgeStyle = 'bg-[#10b981]/20 text-[#4edea3]';
+            let iconBg = 'bg-[#262a35] text-[#4edea3]';
+
+            if (name.includes('hdfc')) {
+              cardBg = 'bg-gradient-to-tr from-[#001e3d] via-[#083b77] to-[#0a192f] border-blue-500/40';
+              badgeStyle = 'bg-blue-500/20 text-blue-300 border border-blue-400/30';
+              iconBg = 'bg-blue-600/30 text-blue-200';
+            } else if (name.includes('icici')) {
+              cardBg = 'bg-gradient-to-tr from-[#3b0808] via-[#6f1212] to-[#250303] border-orange-500/40';
+              badgeStyle = 'bg-orange-500/20 text-orange-300 border border-orange-400/30';
+              iconBg = 'bg-orange-600/30 text-orange-200';
+            } else if (name.includes('sbi') || name.includes('state bank')) {
+              cardBg = 'bg-gradient-to-tr from-[#07203b] via-[#103b6b] to-[#041224] border-cyan-500/40';
+              badgeStyle = 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/30';
+              iconBg = 'bg-cyan-600/30 text-cyan-200';
+            } else if (name.includes('axis')) {
+              cardBg = 'bg-gradient-to-tr from-[#33071e] via-[#520c32] to-[#1a020f] border-pink-500/40';
+              badgeStyle = 'bg-pink-500/20 text-pink-300 border border-pink-400/30';
+              iconBg = 'bg-pink-600/30 text-pink-200';
+            } else if (name.includes('kotak')) {
+              cardBg = 'bg-gradient-to-tr from-[#3b0303] via-[#5c0606] to-[#1c0101] border-red-500/40';
+              badgeStyle = 'bg-red-500/20 text-red-300 border border-red-400/30';
+              iconBg = 'bg-red-600/30 text-red-200';
+            } else if (name.includes('amex') || name.includes('american')) {
+              cardBg = 'bg-gradient-to-tr from-[#1e293b] via-[#334155] to-[#0f172a] border-slate-400/40';
+              badgeStyle = 'bg-slate-700 text-slate-200 border border-slate-500/30';
+              iconBg = 'bg-slate-700 text-emerald-300';
+            }
+
             return (
               <div
                 key={card.id}
-                className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4 shadow-md space-y-3"
+                className={`rounded-2xl ${cardBg} border p-4 shadow-md space-y-3 relative overflow-hidden`}
               >
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2.5">
-                    <div className="w-9 h-9 rounded-xl bg-[#262a35] flex items-center justify-center text-[#4edea3]">
+                    <div className={`w-9 h-9 rounded-xl ${iconBg} flex items-center justify-center`}>
                       <span className="material-symbols-outlined text-[20px]">
                         {isCredit ? 'credit_score' : 'account_balance_wallet'}
                       </span>
                     </div>
                     <div>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-[#dfe2f1]">
+                        <span className="text-xs font-bold text-white">
                           {card.bankName} {card.variant}
                         </span>
-                        <span className="text-[10px] text-[#bbcabf] font-mono">
+                        <span className="text-[10px] text-white/70 font-mono">
                           •••• {card.last4}
                         </span>
                       </div>
-                      <span className="text-[10px] text-[#bbcabf]">
+                      <span className="text-[10px] text-white/70">
                         {card.isDefault ? 'Default for Auto-pay' : isCredit ? 'Credit Card' : 'Primary Salary Account'}
                       </span>
                     </div>
                   </div>
 
-                  <span className="px-2 py-0.5 rounded-full bg-[#313540] text-[#4edea3] text-[10px] font-bold uppercase">
+                  <span className={`px-2 py-0.5 rounded-full ${badgeStyle} text-[10px] font-bold uppercase`}>
                     {card.type}
                   </span>
                 </div>
@@ -363,71 +399,20 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* SECTION 3: Spending & Alert Preferences */}
+      {/* SECTION 3: Default Payment Card */}
       <div className="space-y-2.5 pt-2">
         <div className="flex items-center gap-1.5 px-1">
           <span className="material-symbols-outlined text-[18px] text-[#4edea3]">
-            notifications_active
+            credit_score
           </span>
           <h2 className="text-sm font-bold text-[#dfe2f1]">
-            Spending & Alert Preferences
+            Default Card Preference
           </h2>
         </div>
 
-        <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4.5 shadow-md space-y-4">
-          {/* Bill due reminder */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#262a35] text-[#4edea3] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">mark_chat_unread</span>
-              </div>
-              <div>
-                <span className="text-xs font-semibold text-[#dfe2f1] block">
-                  Bill Due Reminders
-                </span>
-                <span className="text-[10px] text-[#bbcabf]">
-                  WhatsApp & Instant Push Alerts
-                </span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setBillReminders(!billReminders)}
-              className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${
-                billReminders ? 'bg-[#10b981]' : 'bg-[#313540]'
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded-full bg-white transition-transform ${
-                  billReminders ? 'translate-x-5' : 'translate-x-0'
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* High-Value Alert Threshold */}
-          <div className="flex items-center justify-between pt-1">
-            <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#262a35] text-[#c0c1ff] flex items-center justify-center">
-                <span className="material-symbols-outlined text-[18px]">shield_with_heart</span>
-              </div>
-              <div>
-                <span className="text-xs font-semibold text-[#dfe2f1] block">
-                  High-Value Alert Threshold
-                </span>
-                <span className="text-[10px] text-[#bbcabf]">
-                  Instant verify on spends &gt; ₹10,000
-                </span>
-              </div>
-            </div>
-
-            <span className="px-2.5 py-1 rounded-lg bg-[#171b26] border border-white/[0.04] text-xs font-mono font-bold text-[#dfe2f1]">
-              ₹10,000
-            </span>
-          </div>
-
+        <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4.5 shadow-md">
           {/* Default card selector */}
-          <div className="space-y-1.5 pt-1">
+          <div className="space-y-1.5">
             <label className="text-[11px] text-[#bbcabf]">
               Default Card for Quick Expense Entry
             </label>
@@ -467,37 +452,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* Save CTA */}
-      <div className="pt-2">
-        <button
-          onClick={handleSavePreferences}
-          disabled={isSaving}
-          className={`w-full py-4 rounded-full font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] ${
-            saveSuccess
-              ? 'bg-[#4edea3] text-[#002113]'
-              : 'bg-[#10b981] text-[#002113] shadow-[0_0_20px_rgba(16,185,129,0.35)] hover:brightness-105'
-          }`}
-        >
-          {isSaving ? (
-            <>
-              <span className="material-symbols-outlined text-[20px] animate-spin">refresh</span>
-              <span>Updating Vault...</span>
-            </>
-          ) : saveSuccess ? (
-            <>
-              <span className="material-symbols-outlined text-[20px]">check</span>
-              <span>Preferences Saved!</span>
-            </>
-          ) : (
-            <>
-              <span className="material-symbols-outlined text-[20px]">done_all</span>
-              <span>Save & Update Preferences</span>
-            </>
-          )}
-        </button>
-        <p className="text-center text-[10px] text-[#bbcabf] mt-2">
-          Last synced with open banking 12 minutes ago
-        </p>
       </div>
     </div>
   );

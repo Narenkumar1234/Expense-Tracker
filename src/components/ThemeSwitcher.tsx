@@ -11,58 +11,45 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ variant = 'compact
 
   if (variant === 'segmented') {
     return (
-      <div className="space-y-2">
-        <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#171b26] rounded-xl border border-white/[0.04]">
-          <button
-            type="button"
-            onClick={() => setThemeMode('dark')}
-            className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              themeMode === 'dark'
-                ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[16px]">dark_mode</span>
-            <span>Dark</span>
-          </button>
+      <div className="grid grid-cols-3 gap-1.5 p-1 bg-[#171b26] rounded-xl border border-white/[0.04]">
+        <button
+          type="button"
+          onClick={() => setThemeMode('dark')}
+          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+            themeMode === 'dark'
+              ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
+              : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">dark_mode</span>
+          <span>Dark</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setThemeMode('light')}
-            className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              themeMode === 'light'
-                ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[16px]">light_mode</span>
-            <span>Light</span>
-          </button>
+        <button
+          type="button"
+          onClick={() => setThemeMode('light')}
+          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+            themeMode === 'light'
+              ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
+              : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">light_mode</span>
+          <span>Light</span>
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setThemeMode('system')}
-            className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-              themeMode === 'system'
-                ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[16px]">devices</span>
-            <span>System</span>
-          </button>
-        </div>
-
-        <div className="text-[11px] text-[#bbcabf] flex items-center justify-between px-1">
-          <span>
-            {themeMode === 'dark' && 'Obsidian Emerald high-contrast dark theme'}
-            {themeMode === 'light' && 'Clean daylight ivory theme with emerald accents'}
-            {themeMode === 'system' && `Auto-syncing with OS (${resolvedTheme === 'dark' ? 'Currently Dark' : 'Currently Light'})`}
-          </span>
-          <span className="px-2 py-0.2 rounded-full bg-white/5 text-[9px] uppercase font-bold text-[#4edea3]">
-            {resolvedTheme.toUpperCase()} ACTIVE
-          </span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setThemeMode('system')}
+          className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+            themeMode === 'system'
+              ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
+              : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+          }`}
+        >
+          <span className="material-symbols-outlined text-[16px]">devices</span>
+          <span>System</span>
+        </button>
       </div>
     );
   }
