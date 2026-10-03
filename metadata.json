@@ -1,0 +1,6 @@
+{
+  "name": "Aura Personal Finance & Vault",
+  "description": "Obsidian Emerald personal wealth management, smart budgeting, card cycle intelligence, and telemetry ledger.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
