@@ -553,8 +553,8 @@ export default function App() {
               />
             )}
 
-            {currentScreen === 'assistant' && (
-              firebaseUser ? (
+            <div className={currentScreen === 'assistant' ? 'h-full flex flex-col' : 'hidden'}>
+              {firebaseUser ? (
                 <AuraChatbot
                   user={user}
                   transactions={transactions}
@@ -596,8 +596,8 @@ export default function App() {
                     <span>Sign in with Google</span>
                   </button>
                 </div>
-              )
-            )}
+              )}
+            </div>
 
             {currentScreen === 'budgets' && (
               <BudgetsScreen

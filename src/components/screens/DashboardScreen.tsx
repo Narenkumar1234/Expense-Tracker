@@ -63,14 +63,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
     .filter((t) => t.amount < 0)
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-  const monthlyIncome = user.monthlyBaseIncome || (totalInflow > 0 ? totalInflow : 0);
+  const baseIncome = Number(user.monthlyBaseIncome) || 0;
+  // Total effective income combines monthly base allocation + all logged inflows
+  const totalIncome = baseIncome + totalInflow;
   const spentSoFar = totalOutflow;
   const incomeSpentPercent =
-    monthlyIncome > 0
-      ? Math.min(100, Math.round((spentSoFar / monthlyIncome) * 100 * 10) / 10)
+    totalIncome > 0
+      ? Math.min(100, Math.round((spentSoFar / totalIncome) * 100 * 10) / 10)
       : 0;
-  const unspentIncome = Math.max(0, monthlyIncome - spentSoFar);
-  const netBalance = Math.max(0, (totalInflow > 0 ? totalInflow : monthlyIncome) - spentSoFar);
+  const unspentIncome = Math.max(0, totalIncome - spentSoFar);
+  const netBalance = totalIncome - spentSoFar;
 
   // Dynamic Weekly spend distribution
   const weekDays = [
@@ -222,9 +224,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#4edea3] text-xs font-semibold">
-          <span className="material-symbols-outlined text-[14px]">trending_up</span>
-          <span>+4.2% mo</span>
+        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+          netBalance >= 0 ? 'bg-[#10b981]/15 text-[#4edea3]' : 'bg-[#ff7886]/15 text-[#ff7886]'
+        }`}>
+          <span className="material-symbols-outlined text-[14px]">
+            {netBalance >= 0 ? 'trending_up' : 'trending_down'}
+          </span>
+          <span>{netBalance >= 0 ? '+Net Surplus' : '-Net Deficit'}</span>
         </div>
       </div>
 
@@ -232,6 +238,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <div className="relative z-10 mt-2 mb-4 font-mono font-bold tracking-tight text-3xl sm:text-4xl text-[#dfe2f1]">
         {isBalanceHidden
           ? '₹ • •,• •,• • •'
+          : netBalance < 0
+          ? `-₹${Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
           : `₹${netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
       </div>
 
@@ -258,10 +266,16 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </svg>
           </div>
           <div className="text-[17px] font-bold font-mono text-[#4edea3] mt-1">
-            +₹{(totalInflow > 0 ? totalInflow : monthlyIncome).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            +₹{totalIncome.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[10px] text-[#bbcabf] mt-0.5">
-            {totalInflow > 0 ? 'Logged income' : 'Base monthly allocation'}
+            {baseIncome > 0 && totalInflow > 0
+              ? `Base (₹${baseIncome.toLocaleString('en-IN')}) + Logged (₹${totalInflow.toLocaleString('en-IN')})`
+              : totalInflow > 0
+              ? 'Logged income'
+              : baseIncome > 0
+              ? 'Base monthly allocation'
+              : 'No income logged'}
           </div>
         </div>
 
@@ -289,7 +303,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             -₹{spentSoFar.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
           </div>
           <div className="text-[10px] text-[#bbcabf] mt-0.5">
-            {spentSoFar === 0 ? 'No expenses yet' : `${incomeSpentPercent}% of monthly income`}
+            {spentSoFar === 0
+              ? 'No expenses yet'
+              : totalIncome > 0
+              ? `${incomeSpentPercent}% of total income`
+              : 'Logged expenses'}
           </div>
         </div>
       </div>
@@ -320,13 +338,17 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <div className="space-y-1.5">
         <div className="w-full h-2.5 rounded-full bg-[#0f131d] overflow-hidden flex">
           <div
-            className="h-full bg-gradient-to-r from-[#4edea3] via-[#10b981] to-[#34d399] rounded-full transition-all duration-500"
+            className={`h-full rounded-full transition-all duration-500 ${
+              incomeSpentPercent >= 100
+                ? 'bg-[#ff7886]'
+                : 'bg-gradient-to-r from-[#4edea3] via-[#10b981] to-[#34d399]'
+            }`}
             style={{ width: `${incomeSpentPercent}%` }}
           />
         </div>
         <div className="flex items-center justify-between text-xs font-mono">
           <span className="text-[#dfe2f1]">Spent ₹{spentSoFar.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
-          <span className="text-[#bbcabf]">Income ₹{monthlyIncome.toLocaleString('en-IN')}</span>
+          <span className="text-[#bbcabf]">Income ₹{totalIncome.toLocaleString('en-IN')}</span>
         </div>
       </div>
 

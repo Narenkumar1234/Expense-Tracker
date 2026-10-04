@@ -57,10 +57,13 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 }) => {
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const saved = sessionStorage.getItem('aura_chat_history');
+      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
+      const saved = localStorage.getItem(key) || sessionStorage.getItem('aura_chat_history');
       if (saved) {
         const parsed: ChatMessage[] = JSON.parse(saved);
-        return parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m));
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m));
+        }
       }
     } catch {}
     return INITIAL_MESSAGES;
@@ -71,6 +74,21 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Sync state when switching users
+  useEffect(() => {
+    const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed: ChatMessage[] = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setMessages(parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m)));
+          return;
+        }
+      }
+    } catch {}
+  }, [firebaseUser?.uid]);
+
   // Subscribe to Firestore Chat Messages when signed in
   useEffect(() => {
     if (!firebaseUser) return;
@@ -78,29 +96,30 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
     const unsubscribe = subscribeToChatMessages(firebaseUser.uid, (synced) => {
       if (synced && synced.length > 0) {
         setMessages(synced);
-      } else {
-        setMessages(INITIAL_MESSAGES);
+        try {
+          const key = `aura_chat_history_${firebaseUser.uid}`;
+          localStorage.setItem(key, JSON.stringify(synced));
+        } catch {}
       }
     });
 
     return () => {
       unsubscribe();
     };
-  }, [firebaseUser]);
+  }, [firebaseUser?.uid]);
 
-  // Auto-scroll on new message
+  // Auto-scroll on new message or screen active
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, currentScreen]);
 
-  // Save guest conversation to session storage
+  // Save conversation to local storage on every message update
   useEffect(() => {
-    if (!firebaseUser) {
-      try {
-        sessionStorage.setItem('aura_chat_history', JSON.stringify(messages));
-      } catch {}
-    }
-  }, [messages, firebaseUser]);
+    try {
+      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
+      localStorage.setItem(key, JSON.stringify(messages));
+    } catch {}
+  }, [messages, firebaseUser?.uid]);
 
   const handleClearChat = async () => {
     if (firebaseUser) {
@@ -111,6 +130,8 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       }
     }
     try {
+      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
+      localStorage.removeItem(key);
       sessionStorage.removeItem('aura_chat_history');
     } catch {}
     setMessages(INITIAL_MESSAGES);
