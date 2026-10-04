@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
 interface BottomNavProps {
-  currentScreen: 'dashboard' | 'analytics' | 'budgets' | 'transactions' | 'profile' | 'addCard';
-  onNavigate: (screen: 'dashboard' | 'analytics' | 'budgets' | 'transactions') => void;
+  currentScreen: 'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard';
+  onNavigate: (screen: 'dashboard' | 'analytics' | 'assistant' | 'transactions') => void;
   onOpenQuickAdd: () => void;
 }
 
@@ -11,7 +11,6 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onNavigate,
   onOpenQuickAdd,
 }) => {
-  const [showBudgetPopover, setShowBudgetPopover] = useState(false);
   return (
     <nav
       className="nav-pwa-safe fixed bottom-0 left-0 right-0 z-40 bg-transparent pointer-events-none transition-[padding] duration-150"
@@ -56,7 +55,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           {/* Home */}
           <button
             onClick={() => onNavigate('dashboard')}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`flex flex-col items-center justify-center w-14 h-12 transition-all cursor-pointer ${
               currentScreen === 'dashboard'
                 ? 'text-[#4edea3] font-semibold scale-105'
                 : 'text-[#bbcabf] hover:text-[#dfe2f1]'
@@ -72,7 +71,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           {/* Insights / Analytics */}
           <button
             onClick={() => onNavigate('analytics')}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`flex flex-col items-center justify-center w-14 h-12 transition-all cursor-pointer ${
               currentScreen === 'analytics'
                 ? 'text-[#4edea3] font-semibold scale-105'
                 : 'text-[#bbcabf] hover:text-[#dfe2f1]'
@@ -98,34 +97,26 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             </button>
           </div>
 
-          {/* Budgets (Coming Soon Popover) */}
-          <div className="relative">
-            {showBudgetPopover && (
-              <div className="absolute -top-11 left-1/2 -translate-x-1/2 bg-[#171b26] border border-[#10b981]/50 text-[#4edea3] text-[11px] font-bold px-3 py-1.5 rounded-xl shadow-2xl flex items-center gap-1.5 whitespace-nowrap animate-in fade-in zoom-in-95 duration-150 z-50">
-                <span className="material-symbols-outlined text-[14px]">rocket_launch</span>
-                <span>Coming Soon</span>
-                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-[#171b26] border-b border-r border-[#10b981]/50 rotate-45" />
-              </div>
-            )}
-            <button
-              onClick={() => {
-                setShowBudgetPopover(true);
-                setTimeout(() => setShowBudgetPopover(false), 2400);
-              }}
-              className="flex flex-col items-center justify-center w-14 h-12 transition-all text-[#bbcabf] hover:text-[#dfe2f1] cursor-pointer"
-              aria-label="Budgets (Coming Soon)"
-            >
-              <span className="material-symbols-outlined text-[22px]">
-                track_changes
-              </span>
-              <span className="text-[10px] mt-0.5 tracking-tight">Budgets</span>
-            </button>
-          </div>
+          {/* Assistant (replaces Budgets tab) */}
+          <button
+            onClick={() => onNavigate('assistant')}
+            className={`flex flex-col items-center justify-center w-14 h-12 transition-all cursor-pointer ${
+              currentScreen === 'assistant'
+                ? 'text-[#4edea3] font-semibold scale-105'
+                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+            }`}
+            aria-label="Aura Assistant"
+          >
+            <span className="material-symbols-outlined text-[22px]">
+              smart_toy
+            </span>
+            <span className="text-[10px] mt-0.5 tracking-tight">Assistant</span>
+          </button>
 
           {/* History / Transactions */}
           <button
             onClick={() => onNavigate('transactions')}
-            className={`flex flex-col items-center justify-center w-14 h-12 transition-all ${
+            className={`flex flex-col items-center justify-center w-14 h-12 transition-all cursor-pointer ${
               currentScreen === 'transactions'
                 ? 'text-[#4edea3] font-semibold scale-105'
                 : 'text-[#bbcabf] hover:text-[#dfe2f1]'

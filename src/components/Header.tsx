@@ -4,11 +4,12 @@ import { UserProfile } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
-  currentScreen: 'dashboard' | 'analytics' | 'budgets' | 'transactions' | 'profile' | 'addCard';
-  onNavigate: (screen: 'dashboard' | 'analytics' | 'budgets' | 'transactions' | 'profile' | 'addCard') => void;
+  currentScreen: 'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard';
+  onNavigate: (screen: 'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard') => void;
   user: UserProfile;
   unreadCount?: number;
   onOpenNotifications: () => void;
+  onOpenChatbot?: () => void;
   firebaseUser?: FirebaseUser | null;
   onGoogleSignIn?: () => void;
 }
@@ -20,7 +21,6 @@ export const Header: React.FC<HeaderProps> = ({
   unreadCount = 2,
   onOpenNotifications,
   firebaseUser,
-  onGoogleSignIn,
 }) => {
   const getScreenTitle = () => {
     switch (currentScreen) {
@@ -28,6 +28,8 @@ export const Header: React.FC<HeaderProps> = ({
         return 'Home';
       case 'analytics':
         return 'Analytics';
+      case 'assistant':
+        return 'Aura Assistant';
       case 'budgets':
         return 'Budgets';
       case 'transactions':
