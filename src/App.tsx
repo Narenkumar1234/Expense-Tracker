@@ -550,11 +550,16 @@ export default function App() {
                 />
               ) : (
                 <div className="w-full max-w-md mx-auto min-h-[65vh] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-200">
-                  <div className="w-16 h-16 rounded-2xl bg-[#171b26] border border-emerald-500/30 flex items-center justify-center shadow-[0_0_24px_rgba(16,185,129,0.2)] mb-4">
-                    <span className="material-symbols-outlined text-[32px] text-[#4edea3]">chat</span>
+                  {/* Rainbow Theme Border Showcase Box */}
+                  <div className="relative p-[2.5px] rounded-2xl bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] shadow-[0_0_32px_rgba(255,59,48,0.25),0_0_32px_rgba(0,122,255,0.25),0_0_24px_rgba(52,199,89,0.25)] mb-4">
+                    <div className="w-16 h-16 rounded-[13.5px] bg-white dark:bg-[#171b26] flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[32px] bg-gradient-to-tr from-[#ff3b30] via-[#af52de] to-[#007aff] bg-clip-text text-transparent">
+                        chat
+                      </span>
+                    </div>
                   </div>
-                  <h2 className="text-xl font-bold text-white mb-2">Aura</h2>
-                  <p className="text-xs text-[#bbcabf] max-w-xs leading-relaxed mb-6">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Aura</h2>
+                  <p className="text-xs text-slate-600 dark:text-[#bbcabf] max-w-xs leading-relaxed mb-6">
                     Available only for signed-in members. Sign in with your Google account to enable conversational financial management.
                   </p>
                   <button

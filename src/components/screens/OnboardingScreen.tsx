@@ -16,7 +16,6 @@ interface OnboardingScreenProps {
 }
 
 const AVATAR_OPTIONS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
   'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=256&q=80',
   'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=256&q=80',
   'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=256&q=80',
@@ -38,7 +37,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   // Step 2: Identity
   const [name, setName] = useState(firebaseUser?.displayName || '');
   const [selectedAvatar, setSelectedAvatar] = useState(
-    firebaseUser?.photoURL || AVATAR_OPTIONS[4]
+    firebaseUser?.photoURL || AVATAR_OPTIONS[3]
   );
 
   // Step 3: Income

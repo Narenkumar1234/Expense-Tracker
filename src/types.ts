@@ -89,3 +89,18 @@ export interface UserProfile {
   highValueThreshold: number;
   defaultCardId: string;
 }
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  timestamp: string;
+  createdAt?: string;
+  toolExecutions?: {
+    tool: string;
+    summary: string;
+    icon: string;
+    success: boolean;
+  }[];
+}
+

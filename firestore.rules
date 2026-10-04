@@ -97,6 +97,16 @@ service cloud.firestore {
         && data.spentAmount is number && data.spentAmount >= 0;
     }
 
+    // Chat Message validation
+    function isValidChatMessage(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'role', 'text'])
+        && data.keys().hasOnly(['id', 'userId', 'role', 'text', 'timestamp', 'createdAt', 'toolExecutions'])
+        && data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.role in ['user', 'assistant']
+        && data.text is string && data.text.size() <= 30000;
+    }
+
     // User document path
     match /users/{userId} {
       allow get: if isOwner(userId) && isValidId(userId);
@@ -104,6 +114,16 @@ service cloud.firestore {
       allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId);
       allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId) && incoming().uid == existing().uid;
       allow delete: if false;
+
+      // Messages subcollection for Aura AI Assistant
+      match /messages/{messageId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(messageId) && isValidChatMessage(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(messageId) && isValidChatMessage(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(messageId);
+      }
 
       // Transactions subcollection
       match /transactions/{transactionId} {

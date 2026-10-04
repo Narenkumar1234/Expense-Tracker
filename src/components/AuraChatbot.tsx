@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, PaymentCard, BudgetItem, Transaction } from '../types';
 import { MarkdownContent } from './MarkdownContent';
+import { AURA_ASSISTANT_AVATAR } from '../data/mockData';
 
 export interface ChatMessage {
   id: string;
@@ -332,11 +333,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-[#0a0e18]">
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-slate-100 dark:bg-[#171b26]">
                 <img
-                  src="/aura-avatar.svg"
+                  src={AURA_ASSISTANT_AVATAR}
                   alt="Aura"
                   className="w-full h-full object-cover rounded-full"
+                  referrerPolicy="no-referrer"
                 />
               </div>
             )}
@@ -390,11 +392,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
         {isLoading && (
           <div className="flex items-start gap-3 py-1 animate-in fade-in">
-            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-[#0a0e18]">
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-slate-100 dark:bg-[#171b26]">
               <img
-                src="/aura-avatar.svg"
+                src={AURA_ASSISTANT_AVATAR}
                 alt="Aura"
                 className="w-full h-full object-cover rounded-full"
+                referrerPolicy="no-referrer"
               />
             </div>
             <div className="flex-1 min-w-0">

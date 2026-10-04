@@ -65,6 +65,20 @@
         "month": { "type": "string", "maxLength": 32 }
       },
       "required": ["id", "userId", "category", "allocatedAmount", "spentAmount"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Conversation message between user and Aura AI assistant",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "assistant"] },
+        "text": { "type": "string", "maxLength": 30000 },
+        "timestamp": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "role", "text"]
     }
   },
   "firestore": {
@@ -83,6 +97,10 @@
     "/users/{userId}/budgets/{budgetId}": {
       "schema": "Budget",
       "description": "Budgets set by the user"
+    },
+    "/users/{userId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Chat messages between the user and Aura assistant"
     }
   }
 }
