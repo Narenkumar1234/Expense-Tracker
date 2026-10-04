@@ -1,20 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { UserProfile, PaymentCard, BudgetItem, Transaction } from '../types';
+import { UserProfile, PaymentCard, BudgetItem, Transaction, ChatMessage } from '../types';
 import { MarkdownContent } from './MarkdownContent';
 import { AURA_ASSISTANT_AVATAR } from '../data/mockData';
-
-export interface ChatMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-  timestamp: string;
-  toolExecutions?: {
-    tool: string;
-    summary: string;
-    icon: string;
-    success: boolean;
-  }[];
-}
+import { User as FirebaseUser } from 'firebase/auth';
+import {
+  subscribeToChatMessages,
+  addChatMessage,
+  clearChatMessages,
+} from '../firebase/service';
 
 interface AuraChatbotProps {
   user: UserProfile;
@@ -22,6 +15,7 @@ interface AuraChatbotProps {
   cards: PaymentCard[];
   budgets: BudgetItem[];
   currentScreen: string;
+  firebaseUser?: FirebaseUser | null;
   onSaveTransaction: (tx: Omit<Transaction, 'id'>) => void;
   onDeleteTransaction: (id: string) => void;
   onSaveCard: (card: PaymentCard) => void;
@@ -53,6 +47,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   cards,
   budgets,
   currentScreen,
+  firebaseUser,
   onSaveTransaction,
   onDeleteTransaction,
   onSaveCard,
@@ -76,17 +71,50 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Subscribe to Firestore Chat Messages when signed in
+  useEffect(() => {
+    if (!firebaseUser) return;
+
+    const unsubscribe = subscribeToChatMessages(firebaseUser.uid, (synced) => {
+      if (synced && synced.length > 0) {
+        setMessages(synced);
+      } else {
+        setMessages(INITIAL_MESSAGES);
+      }
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [firebaseUser]);
+
   // Auto-scroll on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Save conversation
+  // Save guest conversation to session storage
   useEffect(() => {
+    if (!firebaseUser) {
+      try {
+        sessionStorage.setItem('aura_chat_history', JSON.stringify(messages));
+      } catch {}
+    }
+  }, [messages, firebaseUser]);
+
+  const handleClearChat = async () => {
+    if (firebaseUser) {
+      try {
+        await clearChatMessages(firebaseUser.uid);
+      } catch (err) {
+        console.error('Failed to clear Firestore chat:', err);
+      }
+    }
     try {
-      sessionStorage.setItem('aura_chat_history', JSON.stringify(messages));
+      sessionStorage.removeItem('aura_chat_history');
     } catch {}
-  }, [messages]);
+    setMessages(INITIAL_MESSAGES);
+  };
 
   const executeToolCalls = (functionCalls: any[]): { tool: string; summary: string; icon: string; success: boolean }[] => {
     const executed: { tool: string; summary: string; icon: string; success: boolean }[] = [];
@@ -249,6 +277,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
     setMessages(updatedMessages);
     setIsLoading(true);
 
+    if (firebaseUser) {
+      addChatMessage(firebaseUser.uid, userMsg).catch((e) =>
+        console.error('Failed to sync user message to Firestore:', e)
+      );
+    }
+
     try {
       // Cost-optimized single model
       const response = await fetch('/api/chat', {
@@ -295,6 +329,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
+
+      if (firebaseUser) {
+        addChatMessage(firebaseUser.uid, assistantMsg).catch((e) =>
+          console.error('Failed to sync assistant message to Firestore:', e)
+        );
+      }
     } catch (err: any) {
       console.error('Chat error:', err);
       const msgText = String(err?.message || '');
@@ -308,13 +348,47 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
+
+      if (firebaseUser) {
+        addChatMessage(firebaseUser.uid, errorMsg).catch((e) =>
+          console.error('Failed to sync error message to Firestore:', e)
+        );
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col h-[calc(100vh-8.5rem)] px-4 pb-2 text-slate-800 dark:text-[#dfe2f1] font-sans relative">
+    <div
+      className="w-full max-w-md mx-auto flex flex-col px-4 text-slate-800 dark:text-[#dfe2f1] font-sans relative overflow-hidden"
+      style={{
+        height: 'calc(100dvh - 7.5rem - env(safe-area-inset-top, 0px) - max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px))',
+        maxHeight: 'calc(100dvh - 7.5rem - env(safe-area-inset-top, 0px) - max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px))',
+        paddingBottom: '0.75rem',
+      }}
+    >
+      {/* Top Bar with Cloud Sync Status & Clear Chat Button */}
+      <div className="flex items-center justify-between py-2 border-b border-slate-200/80 dark:border-white/[0.06] shrink-0 text-xs">
+        <div className="flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+          <span className="font-semibold text-slate-800 dark:text-[#dfe2f1]">Aura</span>
+          {firebaseUser && (
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-[#4edea3] font-mono border border-emerald-500/20">
+              Cloud Synced
+            </span>
+          )}
+        </div>
+        <button
+          onClick={handleClearChat}
+          className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 dark:text-[#bbcabf] dark:hover:text-white transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.05]"
+          title="Clear Conversation"
+        >
+          <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
+          <span>Clear</span>
+        </button>
+      </div>
+
       {/* Scrollable Message Thread - Plain Text & Left Avatar Layout with Full Light & Dark Support */}
       <div className="flex-1 overflow-y-auto py-3 space-y-4 no-scrollbar">
         {messages.map((m) => (
@@ -448,6 +522,11 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a request (e.g. 'Add ₹1,200 Electricity bill')..."
             disabled={isLoading}
+            onFocus={() => {
+              setTimeout(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+              }, 200);
+            }}
             className="flex-1 h-11 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30 rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs"
           />
           <button

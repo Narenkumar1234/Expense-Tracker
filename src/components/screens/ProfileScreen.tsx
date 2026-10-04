@@ -12,7 +12,6 @@ interface ProfileScreenProps {
   firebaseUser?: FirebaseUser | null;
   onGoogleLogin?: () => void;
   onLogout?: () => void;
-  onReopenOnboarding?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -24,7 +23,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   firebaseUser,
   onGoogleLogin,
   onLogout,
-  onReopenOnboarding,
 }) => {
   const [billReminders, setBillReminders] = useState(user.billRemindersActive);
   const [monthlyIncome, setMonthlyIncome] = useState(user.monthlyBaseIncome);
@@ -181,16 +179,6 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </svg>
           )}
           <span>{isSigningIn ? 'Connecting...' : 'Sign in with Google'}</span>
-        </button>
-      )}
-
-      {firebaseUser && onLogout && (
-        <button
-          onClick={onLogout}
-          className="w-full h-11 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-xs font-semibold border border-red-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-        >
-          <span className="material-symbols-outlined text-[16px]">logout</span>
-          <span>Sign Out ({firebaseUser.displayName || firebaseUser.email})</span>
         </button>
       )}
 
@@ -522,26 +510,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* SECTION 5: Setup Wizard Reconfiguration */}
-      {onReopenOnboarding && (
-        <div className="space-y-2.5 pt-2">
-          <div className="rounded-2xl bg-[#1c1f2a] border border-white/[0.06] p-4 shadow-md flex items-center justify-between">
-            <div className="space-y-0.5">
-              <div className="text-xs font-bold text-[#dfe2f1] flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-[#4edea3]">tune</span>
-                <span>Rerun Setup Wizard</span>
-              </div>
-              <p className="text-[11px] text-[#bbcabf]">
-                Reconfigure income, pay day, and budget strategies
-              </p>
-            </div>
-            <button
-              onClick={onReopenOnboarding}
-              className="px-3 py-1.5 rounded-xl bg-[#171b26] hover:bg-[#262a35] border border-white/10 text-xs font-semibold text-[#dfe2f1] transition-all cursor-pointer shadow-sm"
-            >
-              Reopen
-            </button>
-          </div>
+      {/* Sign Out Action at Bottom */}
+      {firebaseUser && onLogout && (
+        <div className="pt-3 pb-8">
+          <button
+            onClick={onLogout}
+            className="w-full h-12 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-xs font-semibold border border-red-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"
+          >
+            <span className="material-symbols-outlined text-[18px]">logout</span>
+            <span>Sign Out ({firebaseUser.displayName || firebaseUser.email})</span>
+          </button>
         </div>
       )}
 

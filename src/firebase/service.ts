@@ -5,6 +5,7 @@ import {
   deleteDoc,
   onSnapshot,
   getDoc,
+  getDocs,
 } from 'firebase/firestore';
 import {
   signInWithPopup,
@@ -13,7 +14,7 @@ import {
   onAuthStateChanged,
 } from 'firebase/auth';
 import { db, auth, googleProvider, handleFirestoreError, OperationType } from './config';
-import { Transaction, PaymentCard, BudgetItem, UserProfile } from '../types';
+import { Transaction, PaymentCard, BudgetItem, UserProfile, ChatMessage } from '../types';
 
 // Auth services
 let activeLoginPromise: Promise<FirebaseUser | null> | null = null;
@@ -447,3 +448,74 @@ export async function migrateGuestDataToFirestore(
     console.error('Migration error:', err);
   }
 }
+
+// Aura Chat Messages Firestore Synchronization
+export function subscribeToChatMessages(
+  userId: string,
+  callback: (messages: ChatMessage[]) => void
+): () => void {
+  const collectionPath = `users/${userId}/messages`;
+  const messagesRef = collection(db, 'users', userId, 'messages');
+
+  return onSnapshot(
+    messagesRef,
+    (snapshot) => {
+      const list: ChatMessage[] = [];
+      snapshot.forEach((d) => {
+        const data = d.data();
+        list.push({
+          id: data.id || d.id,
+          role: data.role as 'user' | 'assistant',
+          text: data.text || '',
+          timestamp: data.timestamp || '',
+          createdAt: data.createdAt,
+          toolExecutions: data.toolExecutions,
+        });
+      });
+      // Sort chronologically ascending
+      list.sort((a, b) => {
+        const timeA = a.createdAt || a.id;
+        const timeB = b.createdAt || b.id;
+        return timeA.localeCompare(timeB);
+      });
+      callback(list);
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, collectionPath);
+    }
+  );
+}
+
+export async function addChatMessage(userId: string, message: ChatMessage): Promise<void> {
+  const docPath = `users/${userId}/messages/${message.id}`;
+  try {
+    const docRef = doc(db, 'users', userId, 'messages', message.id);
+    const payload: Record<string, any> = {
+      id: message.id,
+      userId,
+      role: message.role,
+      text: message.text,
+      timestamp: message.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      createdAt: message.createdAt || new Date().toISOString(),
+    };
+    if (message.toolExecutions && message.toolExecutions.length > 0) {
+      payload.toolExecutions = message.toolExecutions;
+    }
+    await setDoc(docRef, payload);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, docPath);
+  }
+}
+
+export async function clearChatMessages(userId: string): Promise<void> {
+  const collectionPath = `users/${userId}/messages`;
+  try {
+    const messagesRef = collection(db, 'users', userId, 'messages');
+    const snapshot = await getDocs(messagesRef);
+    const deletePromises = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, collectionPath);
+  }
+}
+

@@ -47,6 +47,24 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState<
     'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard'
   >('dashboard');
+  const [previousScreen, setPreviousScreen] = useState<
+    'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions'
+  >('dashboard');
+
+  const handleNavigate = (
+    newScreen: 'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard'
+  ) => {
+    if (newScreen === 'profile' || newScreen === 'addCard') {
+      if (currentScreen !== 'profile' && currentScreen !== 'addCard') {
+        setPreviousScreen(currentScreen as any);
+      }
+    }
+    setCurrentScreen(newScreen);
+  };
+
+  const handleBackFromProfile = () => {
+    setCurrentScreen(previousScreen || 'dashboard');
+  };
 
   // Firebase auth state
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
@@ -286,6 +304,7 @@ export default function App() {
       } catch {
         setUser(INITIAL_USER);
       }
+      setCurrentScreen('dashboard');
       showToast('Signed out', 'updated');
     } catch (err) {
       console.error('Logout error', err);
@@ -308,6 +327,7 @@ export default function App() {
     setBudgets(updatedBudgets);
     setTransactions([]);
     setHasCompletedOnboarding(true);
+    setCurrentScreen('dashboard');
 
     // Save to Local Storage (Always serves as offline backup & guest storage)
     try {
@@ -507,7 +527,7 @@ export default function App() {
           {/* Header */}
           <Header
             currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
+            onNavigate={handleNavigate}
             user={user}
             unreadCount={0}
             onOpenNotifications={() => setIsNotificationsOpen(true)}
@@ -515,13 +535,13 @@ export default function App() {
           />
 
           {/* Active Screen */}
-          <main className="flex-1 overflow-x-hidden">
+          <main className={`flex-1 overflow-x-hidden ${currentScreen === 'assistant' ? 'overflow-y-hidden' : ''}`}>
             {currentScreen === 'dashboard' && (
               <DashboardScreen
                 user={user}
                 transactions={transactions}
                 onOpenQuickAdd={handleOpenQuickAdd}
-                onNavigate={(screen) => setCurrentScreen(screen)}
+                onNavigate={handleNavigate}
                 onSelectTransaction={(tx) => setSelectedTx(tx)}
               />
             )}
@@ -541,12 +561,13 @@ export default function App() {
                   cards={cards}
                   budgets={budgets}
                   currentScreen={currentScreen}
+                  firebaseUser={firebaseUser}
                   onSaveTransaction={handleSaveTransaction}
                   onDeleteTransaction={handleDeleteTransaction}
                   onSaveCard={handleSaveCard}
                   onSaveBudget={handleSaveBudget}
                   onUpdateUser={handleUpdateUser}
-                  onNavigate={(screen) => setCurrentScreen(screen)}
+                  onNavigate={handleNavigate}
                 />
               ) : (
                 <div className="w-full max-w-md mx-auto min-h-[65vh] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-200">
@@ -596,18 +617,17 @@ export default function App() {
 
             {currentScreen === 'profile' && (
               <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm backdrop-fade-in">
-                <div className="absolute inset-0 -z-10" onClick={() => setCurrentScreen('dashboard')} />
+                <div className="absolute inset-0 -z-10" onClick={handleBackFromProfile} />
                 <div className="w-full max-w-md h-full bg-[#0f131d] overflow-y-auto no-scrollbar border-l border-white/10 shadow-2xl drawer-slide-right">
                   <ProfileScreen
                     user={user}
                     cards={cards}
-                    onOpenAddCard={() => setCurrentScreen('addCard')}
+                    onOpenAddCard={() => handleNavigate('addCard')}
                     onUpdateUser={handleUpdateUser}
-                    onBack={() => setCurrentScreen('dashboard')}
+                    onBack={handleBackFromProfile}
                     firebaseUser={firebaseUser}
                     onGoogleLogin={handleGoogleSignIn}
                     onLogout={handleLogout}
-                    onReopenOnboarding={() => setHasCompletedOnboarding(false)}
                   />
                 </div>
               </div>
@@ -626,7 +646,7 @@ export default function App() {
           {currentScreen !== 'addCard' && (
             <BottomNav
               currentScreen={currentScreen}
-              onNavigate={(screen) => setCurrentScreen(screen)}
+              onNavigate={handleNavigate}
               onOpenQuickAdd={() => handleOpenQuickAdd()}
             />
           )}
