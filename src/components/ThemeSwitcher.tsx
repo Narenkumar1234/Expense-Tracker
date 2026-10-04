@@ -79,8 +79,8 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ variant = 'compact
             className="fixed inset-0 z-40"
             onClick={() => setDropdownOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-36 bg-[#171b26] border border-white/10 rounded-xl shadow-2xl p-1.5 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-[#bbcabf]">
+          <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-[#171b26] border border-slate-200 dark:border-white/10 rounded-xl shadow-2xl p-1.5 z-50 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 dark:text-[#bbcabf]">
               Appearance
             </div>
             {[
@@ -94,10 +94,10 @@ export const ThemeSwitcher: React.FC<ThemeSwitcherProps> = ({ variant = 'compact
                   setThemeMode(item.id);
                   setDropdownOpen(false);
                 }}
-                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs rounded-lg transition-colors cursor-pointer ${
                   themeMode === item.id
-                    ? 'bg-[#10b981]/20 text-[#4edea3] font-bold'
-                    : 'text-[#dfe2f1] hover:bg-white/5'
+                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-[#4edea3] font-bold'
+                    : 'text-slate-800 dark:text-[#dfe2f1] hover:bg-slate-100 dark:hover:bg-white/5'
                 }`}
               >
                 <div className="flex items-center gap-2">

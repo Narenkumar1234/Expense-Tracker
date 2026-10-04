@@ -1,6 +1,7 @@
 import React from 'react';
 import { AURA_LOGO_URL } from '../data/mockData';
 import { UserProfile } from '../types';
+import { User as FirebaseUser } from 'firebase/auth';
 
 interface HeaderProps {
   currentScreen: 'dashboard' | 'analytics' | 'budgets' | 'transactions' | 'profile' | 'addCard';
@@ -8,6 +9,8 @@ interface HeaderProps {
   user: UserProfile;
   unreadCount?: number;
   onOpenNotifications: () => void;
+  firebaseUser?: FirebaseUser | null;
+  onGoogleSignIn?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +19,8 @@ export const Header: React.FC<HeaderProps> = ({
   user,
   unreadCount = 2,
   onOpenNotifications,
+  firebaseUser,
+  onGoogleSignIn,
 }) => {
   const getScreenTitle = () => {
     switch (currentScreen) {
@@ -64,13 +69,13 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Right: Notifications & Profile Avatar */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
           <button
             onClick={onOpenNotifications}
             aria-label="Notifications"
-            className="w-10 h-10 flex items-center justify-center rounded-full text-[#bbcabf] hover:text-[#dfe2f1] hover:bg-white/5 transition-colors relative"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[#bbcabf] hover:text-[#dfe2f1] hover:bg-white/5 transition-colors relative cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[22px]">
+            <span className="material-symbols-outlined text-[20px] sm:text-[22px]">
               notifications
             </span>
             {unreadCount > 0 && (
@@ -81,15 +86,15 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => onNavigate('profile')}
             aria-label="Open User Profile"
-            className="w-10 h-10 flex items-center justify-center rounded-full p-0.5 relative group hover:ring-2 hover:ring-[#4edea3]/50 transition-all"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full p-0.5 relative group hover:ring-2 hover:ring-[#4edea3]/50 transition-all cursor-pointer"
           >
             <img
               src={user.avatarUrl}
               alt={user.name}
-              className="w-8 h-8 rounded-full object-cover shadow-sm ring-1 ring-white/10"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm ring-1 ring-white/10"
               referrerPolicy="no-referrer"
             />
-            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-[#10b981] border-2 border-[#0f131d]" />
+            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0f131d] ${firebaseUser ? 'bg-[#10b981]' : 'bg-slate-400'}`} />
           </button>
         </div>
       </div>

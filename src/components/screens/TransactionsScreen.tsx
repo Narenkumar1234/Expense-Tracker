@@ -70,6 +70,18 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
     return groups;
   }, [filteredTransactions]);
 
+  const totalInflow = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.amount > 0)
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [filteredTransactions]);
+
+  const totalOutflow = useMemo(() => {
+    return filteredTransactions
+      .filter((t) => t.amount < 0)
+      .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  }, [filteredTransactions]);
+
   const handleExport = () => {
     setExportedToast(true);
     // Trigger synthetic CSV export download
@@ -183,100 +195,124 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         <div className="flex items-center gap-3.5 text-xs font-mono font-bold">
           <div className="flex items-center gap-1 text-[#4edea3]">
             <span className="material-symbols-outlined text-[15px]">arrow_downward</span>
-            <span>+₹64,200</span>
+            <span>+₹{totalInflow.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="flex items-center gap-1 text-[#ff7886]">
             <span className="material-symbols-outlined text-[15px]">arrow_upward</span>
-            <span>-₹31,800</span>
+            <span>-₹{totalOutflow.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
           </div>
         </div>
       </div>
 
+      {/* Empty State when no transactions */}
+      {filteredTransactions.length === 0 && (
+        <div className="p-8 rounded-2xl bg-[#1c1f2a] border border-white/[0.04] text-center space-y-3 my-4">
+          <div className="w-12 h-12 rounded-2xl bg-[#171b26] border border-white/5 text-[#bbcabf] mx-auto flex items-center justify-center">
+            <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+          </div>
+          <div className="text-sm font-bold text-[#dfe2f1]">No Transactions Recorded</div>
+          <p className="text-xs text-[#bbcabf] max-w-[260px] mx-auto">
+            {searchQuery
+              ? 'No transactions match your search filter.'
+              : 'Your financial ledger is clear. Log your first expense or income to start tracking.'}
+          </p>
+          <button
+            onClick={onOpenQuickAdd}
+            className="mt-1 px-4 py-2 rounded-xl bg-[#10b981] hover:bg-[#34d399] text-[#002113] text-xs font-bold transition-all shadow-md active:scale-95 cursor-pointer inline-flex items-center gap-1.5"
+          >
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span>Add Transaction</span>
+          </button>
+        </div>
+      )}
+
       {/* Date Grouped Transactions */}
-      <div className="space-y-4">
-        {/* Today */}
-        {grouped.TODAY.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-[#10b981]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-[#dfe2f1]">
-                  TODAY, OCT 24
+      {filteredTransactions.length > 0 && (
+        <div className="space-y-4">
+          {/* Today */}
+          {grouped.TODAY.length > 0 && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#dfe2f1]">
+                    TODAY
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#bbcabf] font-mono">
+                  {grouped.TODAY.length} entries
                 </span>
               </div>
-              <span className="text-[11px] text-[#bbcabf] font-mono">
-                {grouped.TODAY.length} entries
-              </span>
-            </div>
 
+              <div className="space-y-2">
+                {grouped.TODAY.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Yesterday */}
+          {grouped.YESTERDAY.length > 0 && (
             <div className="space-y-2">
-              {grouped.TODAY.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
-              ))}
-            </div>
-          </div>
-        )}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
+                  YESTERDAY
+                </span>
+                <span className="text-[11px] text-[#bbcabf] font-mono">
+                  {grouped.YESTERDAY.length} entries
+                </span>
+              </div>
 
-        {/* Yesterday */}
-        {grouped.YESTERDAY.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
-                YESTERDAY, OCT 23
-              </span>
-              <span className="text-[11px] text-[#bbcabf] font-mono">
-                {grouped.YESTERDAY.length} entries
-              </span>
+              <div className="space-y-2">
+                {grouped.YESTERDAY.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
+                ))}
+              </div>
             </div>
+          )}
 
+          {/* October 21 / Recent */}
+          {grouped['OCTOBER 21'].length > 0 && (
             <div className="space-y-2">
-              {grouped.YESTERDAY.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
-              ))}
-            </div>
-          </div>
-        )}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
+                  RECENT
+                </span>
+                <span className="text-[11px] text-[#bbcabf] font-mono">
+                  {grouped['OCTOBER 21'].length} entries
+                </span>
+              </div>
 
-        {/* October 21 */}
-        {grouped['OCTOBER 21'].length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
-                OCTOBER 21
-              </span>
-              <span className="text-[11px] text-[#bbcabf] font-mono">
-                {grouped['OCTOBER 21'].length} entries
-              </span>
+              <div className="space-y-2">
+                {grouped['OCTOBER 21'].map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
+                ))}
+              </div>
             </div>
+          )}
 
+          {/* Earlier */}
+          {grouped.EARLIER.length > 0 && (
             <div className="space-y-2">
-              {grouped['OCTOBER 21'].map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
-              ))}
-            </div>
-          </div>
-        )}
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
+                  EARLIER
+                </span>
+                <span className="text-[11px] text-[#bbcabf] font-mono">
+                  {grouped.EARLIER.length} entries
+                </span>
+              </div>
 
-        {/* Earlier */}
-        {grouped.EARLIER.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf]">
-                EARLIER THIS MONTH
-              </span>
-              <span className="text-[11px] text-[#bbcabf] font-mono">
-                {grouped.EARLIER.length} entries
-              </span>
+              <div className="space-y-2">
+                {grouped.EARLIER.map((tx) => (
+                  <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
+                ))}
+              </div>
             </div>
-
-            <div className="space-y-2">
-              {grouped.EARLIER.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} onClick={() => onSelectTransaction(tx)} />
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* Ledger Fully Synchronized Verification Footer */}
       <div className="py-6 flex flex-col items-center justify-center text-center space-y-1 text-[#bbcabf]">

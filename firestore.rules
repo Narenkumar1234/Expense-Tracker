@@ -1,0 +1,139 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global security primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // User Profile validation
+    function isValidUser(data, userId) {
+      return data.keys().hasAll(['uid', 'email'])
+        && data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'photoURL', 'monthlyBaseIncome',
+          'salarySchedule', 'sideStreams', 'sideStreamLabel', 'budgetRatio',
+          'tier', 'billRemindersActive', 'highValueThreshold', 'defaultCardId',
+          'hasCompletedOnboarding', 'createdAt', 'updatedAt'
+        ])
+        && data.uid == userId
+        && data.uid is string && data.uid.size() <= 128
+        && data.email is string && data.email.size() <= 256
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 128))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 512))
+        && (!('monthlyBaseIncome' in data) || (data.monthlyBaseIncome is number && data.monthlyBaseIncome >= 0));
+    }
+
+    // Transaction validation
+    function isValidTransaction(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'merchant', 'category', 'amount', 'date', 'account', 'status'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'merchant', 'category', 'categoryType', 'amount', 'date',
+          'time', 'dateGroup', 'account', 'status', 'icon', 'isRecurring', 'notes',
+          'createdAt', 'recurringDurationMonths', 'monthlyEquivalent', 'recurringFrequency',
+          'totalCommitment', 'remainingCycles', 'cycleEndDate'
+        ])
+        && data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.merchant is string && data.merchant.size() > 0 && data.merchant.size() <= 128
+        && data.category is string && data.category.size() <= 64
+        && data.amount is number
+        && data.date is string && data.date.size() <= 64
+        && data.account is string && data.account.size() <= 64
+        && data.status in ['completed', 'pending', 'declined']
+        && (!('isRecurring' in data) || data.isRecurring is boolean)
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    // Payment Card validation
+    function isValidCard(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'bankName', 'last4', 'type'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'bankName', 'variant', 'last4', 'type', 'isDefault',
+          'balance', 'theme', 'cardNumber', 'expiry', 'cvv', 'network',
+          'cardholderName', 'availableBalance', 'createdAt'
+        ])
+        && data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.bankName is string && data.bankName.size() <= 64
+        && data.last4 is string && data.last4.size() <= 8
+        && data.type in ['credit', 'debit']
+        && (!('balance' in data) || data.balance is number)
+        && (!('isDefault' in data) || data.isDefault is boolean);
+    }
+
+    // Budget validation
+    function isValidBudget(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'category', 'allocatedAmount', 'spentAmount'])
+        && data.keys().hasOnly([
+          'id', 'userId', 'category', 'allocatedAmount', 'spentAmount', 'month',
+          'name', 'icon', 'color', 'statusText', 'statusType', 'createdAt'
+        ])
+        && data.id is string && data.id.size() <= 128
+        && data.userId == userId
+        && data.category is string && data.category.size() <= 64
+        && data.allocatedAmount is number && data.allocatedAmount >= 0
+        && data.spentAmount is number && data.spentAmount >= 0;
+    }
+
+    // User document path
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if false; // Deny user enumeration
+      allow create: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId);
+      allow update: if isOwner(userId) && isValidId(userId) && isValidUser(incoming(), userId) && incoming().uid == existing().uid;
+      allow delete: if false;
+
+      // Transactions subcollection
+      match /transactions/{transactionId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(transactionId) && isValidTransaction(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(transactionId) && isValidTransaction(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(transactionId);
+      }
+
+      // Cards subcollection
+      match /cards/{cardId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(cardId) && isValidCard(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(cardId) && isValidCard(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(cardId);
+      }
+
+      // Budgets subcollection
+      match /budgets/{budgetId} {
+        allow get, list: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(budgetId) && isValidBudget(incoming(), userId)
+          && incoming().id == existing().id
+          && incoming().userId == existing().userId;
+        allow delete: if isOwner(userId) && isValidId(budgetId);
+      }
+    }
+  }
+}

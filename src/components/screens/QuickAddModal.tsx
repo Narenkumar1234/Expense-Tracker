@@ -315,6 +315,34 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             </div>
           </div>
 
+          {/* Description Text Box (Directly below Category) */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-xs font-semibold uppercase tracking-wider text-[#bbcabf]">
+                Description
+              </span>
+              <span className="text-[10px] text-[#bbcabf]">Optional</span>
+            </div>
+            <div className="p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.06] focus-within:border-[#4edea3]/50 focus-within:ring-1 focus-within:ring-[#4edea3]/25 transition-all">
+              <div className="flex items-start gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-[#171b26] flex items-center justify-center text-[#4edea3] mt-0.5 shrink-0">
+                  <span className="material-symbols-outlined text-[16px]">notes</span>
+                </div>
+                <textarea
+                  rows={2}
+                  value={merchantNote}
+                  onChange={(e) => setMerchantNote(e.target.value)}
+                  placeholder={
+                    txType === 'expense'
+                      ? 'Enter description or note (e.g., Dinner with Sarah at Osteria, weekly groceries, cab ride)...'
+                      : 'Enter description or note (e.g., Monthly salary credit, dividend payout, freelance gig)...'
+                  }
+                  className="flex-1 bg-transparent text-xs text-[#dfe2f1] font-medium placeholder:text-[#bbcabf]/50 resize-none focus:outline-none leading-relaxed"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Paid With Card Selector */}
           <div className="space-y-2">
             <span className="text-xs font-semibold uppercase tracking-wider text-[#bbcabf] px-1 block">
@@ -360,20 +388,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             <span className="px-2 py-0.5 rounded-full bg-emerald-500/15 text-[#4edea3] text-[10px] font-bold">
               Current
             </span>
-          </div>
-
-          {/* Merchant / Note Input */}
-          <div className="p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.04] flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#171b26] flex items-center justify-center text-[#bbcabf]">
-              <span className="material-symbols-outlined text-[18px]">storefront</span>
-            </div>
-            <input
-              type="text"
-              value={merchantNote}
-              onChange={(e) => setMerchantNote(e.target.value)}
-              placeholder={txType === 'income' ? 'Source or payer name...' : 'Merchant name or note...'}
-              className="flex-1 bg-transparent text-xs text-[#dfe2f1] font-semibold focus:outline-none"
-            />
           </div>
 
           {/* Recurring Transaction Section: Shown only for expense & initially disabled */}

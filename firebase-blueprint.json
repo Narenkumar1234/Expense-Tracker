@@ -1,0 +1,88 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User profile with display name, email, and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 256 },
+        "displayName": { "type": "string", "maxLength": 128 },
+        "photoURL": { "type": "string", "maxLength": 512 },
+        "monthlyBaseIncome": { "type": "number" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial income or expense transaction record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "merchant": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "maxLength": 64 },
+        "amount": { "type": "number" },
+        "date": { "type": "string", "maxLength": 64 },
+        "time": { "type": "string", "maxLength": 32 },
+        "dateGroup": { "type": "string", "maxLength": 32 },
+        "account": { "type": "string", "maxLength": 64 },
+        "status": { "type": "string", "enum": ["completed", "pending", "declined"] },
+        "isRecurring": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "userId", "merchant", "category", "amount", "date", "account", "status"]
+    },
+    "Card": {
+      "title": "Card",
+      "description": "Payment card or linked bank account",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "bankName": { "type": "string", "maxLength": 64 },
+        "variant": { "type": "string", "maxLength": 64 },
+        "last4": { "type": "string", "maxLength": 8 },
+        "type": { "type": "string", "enum": ["credit", "debit"] },
+        "isDefault": { "type": "boolean" },
+        "balance": { "type": "number" }
+      },
+      "required": ["id", "userId", "bankName", "last4", "type"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Budget category with limit and current spend",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "maxLength": 64 },
+        "allocatedAmount": { "type": "number" },
+        "spentAmount": { "type": "number" },
+        "month": { "type": "string", "maxLength": 32 }
+      },
+      "required": ["id", "userId", "category", "allocatedAmount", "spentAmount"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile document owned exclusively by the authenticated user"
+    },
+    "/users/{userId}/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Transactions belonging to the user"
+    },
+    "/users/{userId}/cards/{cardId}": {
+      "schema": "Card",
+      "description": "Payment cards belonging to the user"
+    },
+    "/users/{userId}/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "Budgets set by the user"
+    }
+  }
+}

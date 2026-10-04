@@ -16,6 +16,11 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'Monthly' | 'Goals'>('Monthly');
 
+  const totalAllocated = budgets.reduce((acc, b) => acc + b.allocated, 0);
+  const totalSpent = budgets.reduce((acc, b) => acc + b.spent, 0);
+  const percentSpent =
+    totalAllocated > 0 ? Math.min(100, Math.round((totalSpent / totalAllocated) * 100)) : 0;
+
   return (
     <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
       {/* Cycle Period Header with Toggle */}
@@ -68,7 +73,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
         </div>
 
         <div className="font-mono text-3xl font-bold tracking-tight text-[#dfe2f1]">
-          ₹45,000
+          ₹{totalAllocated.toLocaleString('en-IN')}
         </div>
 
         {/* Donut progress ring & Safe daily spend */}
@@ -85,7 +90,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
               />
               <path
                 className="text-[#4edea3]"
-                strokeDasharray="70, 100"
+                strokeDasharray={`${percentSpent}, 100`}
                 strokeWidth="3.5"
                 strokeLinecap="round"
                 stroke="currentColor"
@@ -94,7 +99,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
               />
             </svg>
             <div className="absolute flex flex-col items-center justify-center text-center">
-              <span className="text-base font-bold font-mono text-[#dfe2f1]">70%</span>
+              <span className="text-base font-bold font-mono text-[#dfe2f1]">{percentSpent}%</span>
               <span className="text-[10px] text-[#bbcabf]">Spent</span>
             </div>
           </div>
@@ -104,7 +109,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
             <div>
               <div className="text-[11px] text-[#bbcabf]">Spent So Far</div>
               <div className="text-sm font-bold font-mono text-[#dfe2f1]">
-                ₹31,800.50
+                ₹{totalSpent.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </div>
             </div>
 
