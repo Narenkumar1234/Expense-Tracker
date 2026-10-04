@@ -103,7 +103,12 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
+    <div
+      className="w-full max-w-md mx-auto px-4 pt-2 space-y-4 pb-36"
+      style={{
+        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 20px))',
+      }}
+    >
       {/* Search Bar (Full Width) */}
       <div className="relative w-full">
         <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-[#bbcabf] pointer-events-none">
@@ -314,17 +319,10 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         </div>
       )}
 
-      {/* Ledger Fully Synchronized Verification Footer */}
-      <div className="py-6 flex flex-col items-center justify-center text-center space-y-1 text-[#bbcabf]">
-        <div className="w-8 h-8 rounded-full bg-[#10b981]/15 text-[#4edea3] flex items-center justify-center mb-1">
-          <span className="material-symbols-outlined text-[18px]">verified</span>
-        </div>
-        <div className="text-xs font-bold uppercase tracking-wider text-[#dfe2f1]">
-          LEDGER FULLY SYNCHRONIZED
-        </div>
-        <div className="text-[11px] text-[#bbcabf]">
-          Real-time webhooks active via Plaid protocol
-        </div>
+      {/* Ledger status footer */}
+      <div className="py-6 flex items-center justify-center gap-1.5 text-center text-[#bbcabf]">
+        <span className="material-symbols-outlined text-[16px] text-[#4edea3]">check_circle</span>
+        <span className="text-xs text-[#bbcabf] font-medium">You're all caught up</span>
       </div>
     </div>
   );

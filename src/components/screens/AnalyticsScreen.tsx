@@ -183,7 +183,12 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   let accumulatedOffset = 0;
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
+    <div
+      className="w-full max-w-md mx-auto px-4 pt-2 space-y-4 pb-36"
+      style={{
+        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 20px))',
+      }}
+    >
       {/* Period Segmented Switcher (Day, Week, Month, Year) */}
       <div className="bg-[#171b26] p-1 rounded-full flex items-center justify-between border border-white/[0.04]">
         {(['Day', 'Week', 'Month', 'Year'] as const).map((tab) => (

@@ -22,7 +22,12 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
     totalAllocated > 0 ? Math.min(100, Math.round((totalSpent / totalAllocated) * 100)) : 0;
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-28 pt-2 space-y-4">
+    <div
+      className="w-full max-w-md mx-auto px-4 pt-2 space-y-4 pb-36"
+      style={{
+        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 20px))',
+      }}
+    >
       {/* Cycle Period Header with Toggle */}
       <div className="flex items-center justify-between">
         <div>

@@ -61,7 +61,10 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
       const saved = sessionStorage.getItem('aura_chat_history');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed: ChatMessage[] = JSON.parse(saved);
+        return parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m));
+      }
     } catch {}
     return INITIAL_MESSAGES;
   });
@@ -265,7 +268,16 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       });
 
       if (!response.ok) {
-        throw new Error(`Server error ${response.status}`);
+        let errorDetail = '';
+        try {
+          const errData = await response.json();
+          errorDetail = errData?.error || '';
+        } catch {
+          if (response.status === 404) {
+            errorDetail = 'API endpoint /api/chat not found (404). Ensure vercel.json and api/chat.ts are included in your Vercel deployment.';
+          }
+        }
+        throw new Error(errorDetail || `Server error ${response.status}`);
       }
 
       const data = await response.json();
@@ -283,10 +295,14 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err: any) {
       console.error('Chat error:', err);
+      const msgText = String(err?.message || '');
+      const isMissingKey = msgText.includes('GEMINI_API_KEY');
       const errorMsg: ChatMessage = {
         id: 'msg-err-' + Date.now(),
         role: 'assistant',
-        text: 'Sorry, I encountered an issue. Please try again.',
+        text: isMissingKey
+          ? 'GEMINI_API_KEY is not configured in Vercel. Go to Vercel Project Settings > Environment Variables, add GEMINI_API_KEY, and redeploy.'
+          : err?.message || 'Sorry, I encountered an issue. Please try again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
@@ -296,47 +312,74 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   };
 
   return (
-    <div className="w-full max-w-md mx-auto flex flex-col h-[calc(100vh-9.5rem)] px-4 pb-2 text-[#dfe2f1] font-sans relative">
-      {/* Clean, professional header: Just Aura Assistant */}
-      <div className="flex items-center justify-between py-2.5 border-b border-white/[0.06] shrink-0">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-[#171b26] border border-emerald-500/30 text-[#4edea3] flex items-center justify-center">
-            <span className="material-symbols-outlined text-[17px]">smart_toy</span>
-          </div>
-          <span className="font-bold text-sm text-white">Aura Assistant</span>
-        </div>
-      </div>
-
-      {/* Scrollable Message Thread */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-3 no-scrollbar">
+    <div className="w-full max-w-md mx-auto flex flex-col h-[calc(100vh-8.5rem)] px-4 pb-2 text-slate-800 dark:text-[#dfe2f1] font-sans relative">
+      {/* Scrollable Message Thread - Plain Text & Left Avatar Layout with Full Light & Dark Support */}
+      <div className="flex-1 overflow-y-auto py-3 space-y-4 no-scrollbar">
         {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}
-          >
-            <div
-              className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed shadow-xs ${
-                m.role === 'user'
-                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-tr-xs'
-                  : 'bg-[#171b26] border border-white/[0.06] text-[#dfe2f1] rounded-tl-xs'
-              }`}
-            >
-              <p className="whitespace-pre-wrap">{m.text}</p>
+          <div key={m.id} className="flex items-start gap-3 py-1 animate-in fade-in duration-150">
+            {/* Left: Avatar indication */}
+            {m.role === 'user' ? (
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-slate-100 dark:bg-[#171b26]">
+                <img
+                  src={user.avatarUrl}
+                  alt={user.name || 'You'}
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#171b26] border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs mt-0.5 text-emerald-600 dark:text-[#4edea3]">
+                <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+              </div>
+            )}
 
-              {/* Tool Executions Badge */}
+            {/* Right: Plain Text Message Body without card background */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className={`text-xs font-semibold ${
+                    m.role === 'user'
+                      ? 'text-slate-900 dark:text-white'
+                      : 'text-emerald-700 dark:text-[#4edea3]'
+                  }`}
+                >
+                  {m.role === 'user' ? 'You' : 'Aura Assistant'}
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-[#bbcabf]/50 font-mono">
+                  {m.timestamp}
+                </span>
+              </div>
+
+              {/* Plain text content with crystal-clear contrast in both light & dark */}
+              <div
+                className={`text-[13px] leading-relaxed whitespace-pre-wrap ${
+                  m.role === 'user'
+                    ? 'text-slate-900 dark:text-[#f1f3f9]'
+                    : 'text-slate-800 dark:text-[#dfe2f1]'
+                }`}
+              >
+                {m.text}
+              </div>
+
+              {/* Inline Action Result (sleek & professional in both themes) */}
               {m.toolExecutions && m.toolExecutions.length > 0 && (
-                <div className="mt-2 pt-2 border-t border-white/10 space-y-1.5">
+                <div className="mt-2 space-y-1.5">
                   {m.toolExecutions.map((exec, idx) => (
                     <div
                       key={idx}
-                      className={`flex items-center gap-2 p-2 rounded-xl text-[11px] font-semibold ${
+                      className={`inline-flex items-center gap-2 py-1.5 px-2.5 rounded-lg text-xs font-medium ${
                         exec.success
-                          ? 'bg-[#10b981]/15 border border-[#10b981]/30 text-[#4edea3]'
-                          : 'bg-red-500/15 border border-red-500/30 text-red-300'
+                          ? 'bg-emerald-50 dark:bg-[#10b981]/10 border border-emerald-200 dark:border-[#10b981]/25 text-emerald-700 dark:text-[#4edea3]'
+                          : 'bg-rose-50 dark:bg-red-500/10 border border-rose-200 dark:border-red-500/25 text-rose-700 dark:text-red-300'
                       }`}
                     >
                       <span className="material-symbols-outlined text-[15px]">{exec.icon}</span>
-                      <span className="flex-1 truncate">{exec.summary}</span>
+                      <span className="text-slate-800 dark:text-[#dfe2f1] font-mono text-[11px]">
+                        {exec.summary}
+                      </span>
                       <span className="material-symbols-outlined text-[13px]">
                         {exec.success ? 'check' : 'close'}
                       </span>
@@ -345,15 +388,26 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                 </div>
               )}
             </div>
-            <span className="text-[9px] text-[#bbcabf]/50 font-mono mt-0.5 px-1">{m.timestamp}</span>
           </div>
         ))}
 
         {isLoading && (
-          <div className="flex items-start gap-2">
-            <div className="rounded-2xl rounded-tl-xs bg-[#171b26] border border-white/[0.06] px-3.5 py-2.5 text-xs text-[#bbcabf] flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#10b981] animate-ping" />
-              <span>Working...</span>
+          <div className="flex items-start gap-3 py-1 animate-in fade-in">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#171b26] border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs mt-0.5 text-emerald-600 dark:text-[#4edea3]">
+              <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold text-emerald-700 dark:text-[#4edea3]">
+                  Aura Assistant
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#bbcabf] py-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#10b981] animate-ping" />
+                <span className="text-[12px] text-slate-500 dark:text-[#bbcabf]/70 font-mono">
+                  Working...
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -362,12 +416,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       </div>
 
       {/* Quick Suggestion Chips */}
-      <div className="py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
+      <div className="py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-t border-slate-200/80 dark:border-white/[0.04]">
         {QUICK_PROMPTS.map((prompt, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(prompt)}
-            className="px-2.5 py-1 rounded-full bg-[#171b26] hover:bg-[#202534] border border-white/[0.06] text-[10px] font-semibold text-[#bbcabf] hover:text-[#4edea3] whitespace-nowrap transition-colors cursor-pointer shrink-0"
+            className="px-3 py-1.5 rounded-full bg-white dark:bg-[#171b26] hover:bg-slate-50 dark:hover:bg-[#202534] border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500/40 text-[11px] font-medium text-slate-700 dark:text-[#bbcabf] hover:text-emerald-700 dark:hover:text-[#4edea3] shadow-xs dark:shadow-none whitespace-nowrap transition-all cursor-pointer active:scale-95 shrink-0"
           >
             {prompt}
           </button>
@@ -375,7 +429,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       </div>
 
       {/* Input Bar */}
-      <div className="pt-2 shrink-0">
+      <div className="pt-2 pb-1 shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -390,12 +444,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a request (e.g. 'Add ₹1,200 Electricity bill')..."
             disabled={isLoading}
-            className="flex-1 h-11 bg-[#171b26] border border-white/10 rounded-xl px-3.5 text-xs text-[#dfe2f1] placeholder:text-[#bbcabf]/50 focus:outline-none focus:border-[#4edea3] transition-colors"
+            className="flex-1 h-11 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30 rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs"
           />
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="w-11 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 hover:opacity-95 text-[#002113] font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+            className="w-11 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-400 dark:hover:opacity-95 text-white dark:text-[#002113] font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40"
             aria-label="Send message"
           >
             <span className="material-symbols-outlined text-[18px]">send</span>

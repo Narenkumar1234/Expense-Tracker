@@ -68,6 +68,19 @@ export async function loginWithGoogle(): Promise<FirebaseUser | null> {
         throw new Error('Sign-in popup was blocked. Please enable popups or continue as Guest.');
       }
 
+      // Unauthorized domain (e.g. Vercel deployment not added to Firebase Authorized Domains)
+      if (
+        errorCode === 'auth/unauthorized-domain' ||
+        errorMessage.toLowerCase().includes('unauthorized domain') ||
+        errorMessage.toLowerCase().includes('requested action is invalid')
+      ) {
+        const domain = typeof window !== 'undefined' ? window.location.hostname : 'your deployment domain';
+        console.error(`Firebase Auth Error: Domain "${domain}" is not authorized.`);
+        throw new Error(
+          `Domain "${domain}" is not whitelisted. Add it to Authorized Domains in Firebase Console > Authentication > Settings.`
+        );
+      }
+
       // Firebase internal assertion race condition when a previous popup is closed
       if (errorMessage.includes('Pending promise was never set')) {
         console.info('Sign-in promise cleared after popup dismissal.');

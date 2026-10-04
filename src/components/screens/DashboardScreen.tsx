@@ -589,7 +589,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   );
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 pb-28 pt-3 space-y-4">
+    <div
+      className="w-full max-w-md mx-auto px-4 pt-3 space-y-4 pb-36"
+      style={{
+        paddingBottom: 'calc(7.5rem + env(safe-area-inset-bottom, 20px))',
+      }}
+    >
       {/* Greeting Header */}
       <div className="flex items-center justify-between pt-1">
         <h1 className="text-2xl font-bold tracking-tight text-[#dfe2f1]">
