@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { UserProfile, PaymentCard, BudgetItem, Transaction } from '../types';
+import { MarkdownContent } from './MarkdownContent';
 
 export interface ChatMessage {
   id: string;
@@ -32,7 +33,7 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: 'msg-intro',
     role: 'assistant',
-    text: "Hello. I'm Aura Assistant. What would you like to record, calculate, or update?",
+    text: "Hello. I'm Aura. What would you like to record, calculate, or update?",
     timestamp: 'Just now',
   },
 ];
@@ -331,8 +332,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                 />
               </div>
             ) : (
-              <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#171b26] border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs mt-0.5 text-emerald-600 dark:text-[#4edea3]">
-                <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+              <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-[#0a0e18]">
+                <img
+                  src="/aura-avatar.svg"
+                  alt="Aura"
+                  className="w-full h-full object-cover rounded-full"
+                />
               </div>
             )}
 
@@ -346,23 +351,15 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                       : 'text-emerald-700 dark:text-[#4edea3]'
                   }`}
                 >
-                  {m.role === 'user' ? 'You' : 'Aura Assistant'}
+                  {m.role === 'user' ? 'You' : 'Aura'}
                 </span>
                 <span className="text-[10px] text-slate-400 dark:text-[#bbcabf]/50 font-mono">
                   {m.timestamp}
                 </span>
               </div>
 
-              {/* Plain text content with crystal-clear contrast in both light & dark */}
-              <div
-                className={`text-[13px] leading-relaxed whitespace-pre-wrap ${
-                  m.role === 'user'
-                    ? 'text-slate-900 dark:text-[#f1f3f9]'
-                    : 'text-slate-800 dark:text-[#dfe2f1]'
-                }`}
-              >
-                {m.text}
-              </div>
+              {/* Markdown parsed text content */}
+              <MarkdownContent content={m.text} isUser={m.role === 'user'} />
 
               {/* Inline Action Result (sleek & professional in both themes) */}
               {m.toolExecutions && m.toolExecutions.length > 0 && (
@@ -393,13 +390,17 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
         {isLoading && (
           <div className="flex items-start gap-3 py-1 animate-in fade-in">
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-[#171b26] border border-emerald-200 dark:border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs mt-0.5 text-emerald-600 dark:text-[#4edea3]">
-              <span className="material-symbols-outlined text-[18px]">smart_toy</span>
+            <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 ring-1 ring-slate-300 dark:ring-white/10 shadow-xs mt-0.5 bg-[#0a0e18]">
+              <img
+                src="/aura-avatar.svg"
+                alt="Aura"
+                className="w-full h-full object-cover rounded-full"
+              />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs font-semibold text-emerald-700 dark:text-[#4edea3]">
-                  Aura Assistant
+                  Aura
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-[#bbcabf] py-1">

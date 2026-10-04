@@ -98,19 +98,19 @@ html.dark .text-\[\#bbcabf\] {
 
 html.light body,
 html:not(.dark) body {
-  background-color: #f1f5f9 !important;
+  background-color: #ffffff !important;
   color: #0f172a !important;
 }
 
-/* Canvas & Page Containers */
+/* Canvas & Page Containers (Pure White Canvas in Light Mode) */
 html.light .bg-\[\#0a0e18\],
 html:not(.dark) .bg-\[\#0a0e18\] {
-  background-color: #f1f5f9 !important;
+  background-color: #ffffff !important;
 }
 
 html.light .bg-\[\#0f131d\],
 html:not(.dark) .bg-\[\#0f131d\] {
-  background-color: #f8fafc !important;
+  background-color: #ffffff !important;
 }
 
 /* Card Surfaces (Crisp White with Soft Natural Shadow) */
@@ -144,7 +144,7 @@ html.light .bg-\[\#0f131d\]\/60,
 html.light .bg-\[\#0f131d\]\/70,
 html:not(.dark) .bg-\[\#0f131d\]\/60,
 html:not(.dark) .bg-\[\#0f131d\]\/70 {
-  background-color: #f8fafc !important;
+  background-color: #ffffff !important;
   border-color: #e2e8f0 !important;
 }
 

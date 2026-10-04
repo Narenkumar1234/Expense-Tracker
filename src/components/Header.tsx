@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({
       case 'analytics':
         return 'Analytics';
       case 'assistant':
-        return 'Aura Assistant';
+        return 'Aura';
       case 'budgets':
         return 'Budgets';
       case 'transactions':

@@ -551,9 +551,9 @@ export default function App() {
               ) : (
                 <div className="w-full max-w-md mx-auto min-h-[65vh] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-200">
                   <div className="w-16 h-16 rounded-2xl bg-[#171b26] border border-emerald-500/30 flex items-center justify-center shadow-[0_0_24px_rgba(16,185,129,0.2)] mb-4">
-                    <span className="material-symbols-outlined text-[32px] text-[#4edea3]">smart_toy</span>
+                    <span className="material-symbols-outlined text-[32px] text-[#4edea3]">chat</span>
                   </div>
-                  <h2 className="text-xl font-bold text-white mb-2">Aura Assistant</h2>
+                  <h2 className="text-xl font-bold text-white mb-2">Aura</h2>
                   <p className="text-xs text-[#bbcabf] max-w-xs leading-relaxed mb-6">
                     Available only for signed-in members. Sign in with your Google account to enable conversational financial management.
                   </p>

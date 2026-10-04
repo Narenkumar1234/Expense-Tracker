@@ -96,7 +96,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 </button>
               </div>
 
-              {/* Assistant */}
+              {/* Aura */}
               <button
                 onClick={() => onNavigate('assistant')}
                 className={`flex-1 flex flex-col items-center justify-center h-full active:scale-95 transition-all cursor-pointer ${
@@ -104,12 +104,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                     ? 'text-[#4edea3] font-semibold'
                     : 'text-[#bbcabf] hover:text-[#dfe2f1]'
                 }`}
-                aria-label="Aura Assistant"
+                aria-label="Aura"
               >
                 <span className="material-symbols-outlined text-[22px]">
-                  smart_toy
+                  chat
                 </span>
-                <span className="text-[10px] mt-0.5 tracking-tight font-medium">Assistant</span>
+                <span className="text-[10px] mt-0.5 tracking-tight font-medium">Aura</span>
               </button>
 
               {/* History / Transactions */}
