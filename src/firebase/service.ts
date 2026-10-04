@@ -16,31 +16,72 @@ import { db, auth, googleProvider, handleFirestoreError, OperationType } from '.
 import { Transaction, PaymentCard, BudgetItem, UserProfile } from '../types';
 
 // Auth services
-export async function loginWithGoogle(): Promise<FirebaseUser> {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
+let activeLoginPromise: Promise<FirebaseUser | null> | null = null;
 
-    // Check if user document already exists
-    const userDocRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userDocRef);
-
-    if (!userSnap.exists()) {
-      await setDoc(userDocRef, {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || 'Aura User',
-        photoURL: user.photoURL || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      });
-    }
-
-    return user;
-  } catch (error) {
-    console.error('Google Sign-In Error:', error);
-    throw error;
+export async function loginWithGoogle(): Promise<FirebaseUser | null> {
+  // If a login popup is already in progress, reuse the existing promise to prevent overlapping popups
+  if (activeLoginPromise) {
+    return activeLoginPromise;
   }
+
+  activeLoginPromise = (async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+
+      // Check if user document already exists
+      try {
+        const userDocRef = doc(db, 'users', user.uid);
+        const userSnap = await getDoc(userDocRef);
+
+        if (!userSnap.exists()) {
+          await setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || 'Aura User',
+            photoURL: user.photoURL || '',
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      } catch (docErr) {
+        console.warn('User document sync notice:', docErr);
+      }
+
+      return user;
+    } catch (error: any) {
+      const errorCode = error?.code || '';
+      const errorMessage = String(error?.message || '');
+
+      // User closed the popup window - normal user action, not a system failure
+      if (
+        errorCode === 'auth/popup-closed-by-user' ||
+        errorCode === 'auth/cancelled-popup-request'
+      ) {
+        console.info('Google Sign-in was dismissed by user.');
+        return null;
+      }
+
+      // Popup blocked by browser policy
+      if (errorCode === 'auth/popup-blocked') {
+        console.warn('Sign-in popup blocked by browser settings.');
+        throw new Error('Sign-in popup was blocked. Please enable popups or continue as Guest.');
+      }
+
+      // Firebase internal assertion race condition when a previous popup is closed
+      if (errorMessage.includes('Pending promise was never set')) {
+        console.info('Sign-in promise cleared after popup dismissal.');
+        return null;
+      }
+
+      console.warn('Google Sign-In notice:', errorMessage);
+      throw error;
+    } finally {
+      activeLoginPromise = null;
+    }
+  })();
+
+  return activeLoginPromise;
 }
 
 export async function logoutUser(): Promise<void> {

@@ -215,7 +215,13 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-[#0a0e18] text-slate-800 dark:text-[#dfe2f1] flex flex-col justify-between max-w-md mx-auto px-5 py-5 select-none relative overflow-hidden font-sans transition-colors duration-200">
+    <div
+      className="pwa-onboarding-container min-h-screen bg-[#f8fafc] dark:bg-[#0a0e18] text-slate-800 dark:text-[#dfe2f1] flex flex-col justify-between max-w-md mx-auto px-5 select-none relative overflow-hidden font-sans transition-all duration-200"
+      style={{
+        paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 1.25rem)',
+        paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 1.25rem), 1.25rem)',
+      }}
+    >
       {/* Background ambient lighting */}
       <div className="absolute -top-24 -right-24 w-80 h-80 bg-emerald-500/10 dark:bg-[#10b981]/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-indigo-500/10 dark:bg-[#6366f1]/15 rounded-full blur-3xl pointer-events-none" />

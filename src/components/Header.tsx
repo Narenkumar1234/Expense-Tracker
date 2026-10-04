@@ -42,7 +42,12 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="sticky top-0 w-full z-40 bg-[#0f131d]/90 backdrop-blur-xl border-b border-white/[0.04] shadow-[0_1px_12px_rgba(0,0,0,0.4)]">
+    <header
+      className="sticky top-0 w-full z-40 bg-[#0f131d]/90 backdrop-blur-xl border-b border-white/[0.04] shadow-[0_1px_12px_rgba(0,0,0,0.4)] transition-[padding] duration-150"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+      }}
+    >
       <div className="h-16 px-4 sm:px-5 flex items-center justify-between max-w-md mx-auto w-full">
         {/* Left: Brand Logo & Current Section Name Vertically Centered */}
         <div className="flex items-center gap-2.5">

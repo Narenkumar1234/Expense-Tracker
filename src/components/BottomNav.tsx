@@ -13,7 +13,12 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 }) => {
   const [showBudgetPopover, setShowBudgetPopover] = useState(false);
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-40 bg-transparent pointer-events-none">
+    <nav
+      className="nav-pwa-safe fixed bottom-0 left-0 right-0 z-40 bg-transparent pointer-events-none transition-[padding] duration-150"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      }}
+    >
       <div className="max-w-md mx-auto relative h-16 pointer-events-auto">
         {/* Seamless background layer with smooth concave U notch */}
         <div className="absolute inset-0 flex items-stretch pointer-events-none drop-shadow-[0_-3px_12px_rgba(0,0,0,0.18)]">

@@ -18,6 +18,48 @@
 }
 
 /* ==========================================================================
+   PWA & SAFE AREA NOTCH / MOBILE ACTION BAR / STATUS BAR ADAPTATION
+   ========================================================================== */
+
+:root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Standalone PWA display mode (installed on iOS / Android home screen) */
+@media all and (display-mode: standalone) {
+  header.sticky {
+    padding-top: max(env(safe-area-inset-top, 0px), 28px) !important;
+  }
+
+  .pwa-onboarding-container {
+    padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 3rem) !important;
+  }
+
+  .nav-pwa-safe {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important;
+  }
+}
+
+/* Fallback when detected via JS .is-pwa class on <html> */
+html.is-pwa header.sticky {
+  padding-top: max(env(safe-area-inset-top, 0px), 28px) !important;
+}
+
+html.is-pwa .pwa-onboarding-container {
+  padding-top: max(calc(env(safe-area-inset-top, 0px) + 1.25rem), 3rem) !important;
+}
+
+html.is-pwa .nav-pwa-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px) !important;
+}
+
+/* General mobile notch safe-area handling when viewport-fit=cover is set */
+header.sticky {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* ==========================================================================
    DARK MODE DESIGN SYSTEM (EXPLICIT OVERRIDES FOR OBSIDIAN EMERALD)
    ========================================================================== */
 

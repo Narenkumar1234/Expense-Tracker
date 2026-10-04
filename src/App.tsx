@@ -205,6 +205,27 @@ export default function App() {
     };
   }, [firebaseUser]);
 
+  // Detect PWA Standalone Mode and apply is-pwa class to root
+  useEffect(() => {
+    const updatePwaState = () => {
+      try {
+        const isStandalone =
+          window.matchMedia('(display-mode: standalone)').matches ||
+          (window.navigator as any).standalone === true ||
+          document.referrer.includes('android-app://');
+        if (isStandalone) {
+          document.documentElement.classList.add('is-pwa');
+        } else {
+          document.documentElement.classList.remove('is-pwa');
+        }
+      } catch {}
+    };
+    updatePwaState();
+    const mq = window.matchMedia?.('(display-mode: standalone)');
+    mq?.addEventListener?.('change', updatePwaState);
+    return () => mq?.removeEventListener?.('change', updatePwaState);
+  }, []);
+
   const showToast = (message: string, type: 'saved' | 'deleted' | 'updated' = 'saved') => {
     setToast({ message, type });
     setTimeout(() => {
@@ -216,18 +237,26 @@ export default function App() {
   const handleGoogleSignIn = async (): Promise<FirebaseUser | null> => {
     try {
       const signedInUser = await loginWithGoogle();
+      if (!signedInUser) {
+        return null;
+      }
+
       // Migrate existing local storage data
-      await migrateGuestDataToFirestore(signedInUser.uid, {
-        user: {
-          ...user,
-          name: signedInUser.displayName || user.name,
-          email: signedInUser.email || user.email,
-          avatarUrl: signedInUser.photoURL || user.avatarUrl,
-        },
-        transactions,
-        cards,
-        budgets,
-      });
+      try {
+        await migrateGuestDataToFirestore(signedInUser.uid, {
+          user: {
+            ...user,
+            name: signedInUser.displayName || user.name,
+            email: signedInUser.email || user.email,
+            avatarUrl: signedInUser.photoURL || user.avatarUrl,
+          },
+          transactions,
+          cards,
+          budgets,
+        });
+      } catch (migErr) {
+        console.warn('Migration warning:', migErr);
+      }
 
       setUser((prev) => ({
         ...prev,
@@ -239,8 +268,8 @@ export default function App() {
       showToast(`Welcome, ${signedInUser.displayName?.split(' ')[0] || 'User'}!`, 'saved');
       return signedInUser;
     } catch (err: any) {
-      console.error('Google Sign-In failed', err);
-      showToast('Sign-In cancelled or failed', 'deleted');
+      const msg = err?.message || 'Sign-in cancelled';
+      showToast(msg, 'deleted');
       return null;
     }
   };
