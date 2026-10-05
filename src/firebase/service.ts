@@ -5,7 +5,6 @@ import {
   deleteDoc,
   onSnapshot,
   getDoc,
-  getDocs,
 } from 'firebase/firestore';
 import {
   signInWithPopup,
@@ -224,7 +223,7 @@ export function subscribeToTransactions(
       callback(list);
     },
     (error) => {
-      handleFirestoreError(error, OperationType.GET, collectionPath);
+      console.warn(`Firestore read notice on ${collectionPath}:`, error?.message || error);
     }
   );
 }
@@ -306,7 +305,7 @@ export function subscribeToCards(
       callback(list);
     },
     (error) => {
-      handleFirestoreError(error, OperationType.GET, collectionPath);
+      console.warn(`Firestore read notice on ${collectionPath}:`, error?.message || error);
     }
   );
 }
@@ -375,7 +374,7 @@ export function subscribeToBudgets(
       callback(list);
     },
     (error) => {
-      handleFirestoreError(error, OperationType.GET, collectionPath);
+      console.warn(`Firestore read notice on ${collectionPath}:`, error?.message || error);
     }
   );
 }
@@ -449,7 +448,7 @@ export async function migrateGuestDataToFirestore(
   }
 }
 
-// Aura Chat Messages Firestore Synchronization
+// Chat Messages Firestore Synchronization for Signed-In Members
 export function subscribeToChatMessages(
   userId: string,
   callback: (messages: ChatMessage[]) => void
@@ -465,14 +464,14 @@ export function subscribeToChatMessages(
         const data = d.data();
         list.push({
           id: data.id || d.id,
-          role: data.role as 'user' | 'assistant',
+          role: data.role,
           text: data.text || '',
-          timestamp: data.timestamp || '',
+          timestamp: data.timestamp || 'Just now',
           createdAt: data.createdAt,
-          toolExecutions: data.toolExecutions,
+          toolExecutions: data.toolExecutions || [],
         });
       });
-      // Sort chronologically ascending
+      // Sort in ascending order by timestamp / creation
       list.sort((a, b) => {
         const timeA = a.createdAt || a.id;
         const timeB = b.createdAt || b.id;
@@ -481,41 +480,25 @@ export function subscribeToChatMessages(
       callback(list);
     },
     (error) => {
-      handleFirestoreError(error, OperationType.GET, collectionPath);
+      console.warn(`Firestore chat messages notice on ${collectionPath}:`, error?.message || error);
     }
   );
 }
 
-export async function addChatMessage(userId: string, message: ChatMessage): Promise<void> {
+export async function saveChatMessage(userId: string, message: ChatMessage): Promise<void> {
   const docPath = `users/${userId}/messages/${message.id}`;
   try {
     const docRef = doc(db, 'users', userId, 'messages', message.id);
-    const payload: Record<string, any> = {
+    await setDoc(docRef, {
       id: message.id,
       userId,
       role: message.role,
       text: message.text,
-      timestamp: message.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      timestamp: message.timestamp,
       createdAt: message.createdAt || new Date().toISOString(),
-    };
-    if (message.toolExecutions && message.toolExecutions.length > 0) {
-      payload.toolExecutions = message.toolExecutions;
-    }
-    await setDoc(docRef, payload);
+      toolExecutions: message.toolExecutions || [],
+    });
   } catch (error) {
-    handleFirestoreError(error, OperationType.CREATE, docPath);
+    console.error(`Error persisting chat message to ${docPath}:`, error);
   }
 }
-
-export async function clearChatMessages(userId: string): Promise<void> {
-  const collectionPath = `users/${userId}/messages`;
-  try {
-    const messagesRef = collection(db, 'users', userId, 'messages');
-    const snapshot = await getDocs(messagesRef);
-    const deletePromises = snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref));
-    await Promise.all(deletePromises);
-  } catch (error) {
-    handleFirestoreError(error, OperationType.DELETE, collectionPath);
-  }
-}
-

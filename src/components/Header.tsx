@@ -1,7 +1,7 @@
 import React from 'react';
-import { AURA_LOGO_URL } from '../data/mockData';
 import { UserProfile } from '../types';
 import { User as FirebaseUser } from 'firebase/auth';
+import { AuraLogo } from './AuraLogo';
 
 interface HeaderProps {
   currentScreen: 'dashboard' | 'analytics' | 'assistant' | 'budgets' | 'transactions' | 'profile' | 'addCard';
@@ -55,19 +55,10 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => onNavigate('dashboard')}
-            className="flex items-center hover:opacity-90 transition-opacity focus:outline-none shrink-0"
+            className="flex items-center hover:opacity-90 active:scale-95 transition-all focus:outline-none shrink-0"
             aria-label="Aura Home"
           >
-            <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-[#171b26] border border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.25)]">
-              <img
-                src={AURA_LOGO_URL}
-                alt="Aura Logo"
-                className="w-full h-full object-contain"
-                onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
-            </div>
+            <AuraLogo size={28} iconSize={13} />
           </button>
 
           <span className="text-[17px] font-bold text-[#dfe2f1] tracking-tight leading-none select-none">

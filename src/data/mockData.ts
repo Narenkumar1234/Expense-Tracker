@@ -31,7 +31,7 @@ export const INITIAL_SAVINGS_GOALS: SavingsGoal[] = [];
 
 export const INITIAL_TRANSACTIONS: Transaction[] = [];
 
-export const AURA_LOGO_URL = 'https://lh3.googleusercontent.com/aida/AEtjO1XxFa10o-zeBBIu1iYnKzjQSXJIrL1WrFJkvlZlhlVA8e3lzaQAsGiXEpzcFA_vGgzo1NYKsxQW--SkirwXwKTD3VVy-m3mKhxGuTZmySeYsFS8dey59W_M4Gx75UGEtUMS9CST1AmYPMOj5HYIem36XLq3c48tSPfxUZS6E-aoYXeRdM-X2LJx0TxcW2jl2_g6sjHS9ssKhxdudgUQn5rRgBqfBeJvv36tSjp8OUAwe_g7PvVQHjXBPzQ';
+export const AURA_LOGO_URL = '/aura-glow-logo.svg';
 
 export const AURA_ASSISTANT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80';
 

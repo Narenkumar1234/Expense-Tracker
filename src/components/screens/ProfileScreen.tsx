@@ -12,6 +12,7 @@ interface ProfileScreenProps {
   firebaseUser?: FirebaseUser | null;
   onGoogleLogin?: () => void;
   onLogout?: () => void;
+  onReopenOnboarding?: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
@@ -23,6 +24,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   firebaseUser,
   onGoogleLogin,
   onLogout,
+  onReopenOnboarding,
 }) => {
   const [billReminders, setBillReminders] = useState(user.billRemindersActive);
   const [monthlyIncome, setMonthlyIncome] = useState(user.monthlyBaseIncome);
@@ -510,9 +512,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </div>
       </div>
 
-      {/* Sign Out Action at Bottom */}
+      {/* SECTION 5: Account Sign Out */}
       {firebaseUser && onLogout && (
-        <div className="pt-3 pb-8">
+        <div className="pt-2">
           <button
             onClick={onLogout}
             className="w-full h-12 rounded-2xl bg-red-500/10 hover:bg-red-500/20 text-red-500 dark:text-red-400 text-xs font-semibold border border-red-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99]"

@@ -3,20 +3,19 @@ import { UserProfile, PaymentCard, BudgetItem, Transaction, ChatMessage } from '
 import { MarkdownContent } from './MarkdownContent';
 import { AURA_ASSISTANT_AVATAR } from '../data/mockData';
 import { User as FirebaseUser } from 'firebase/auth';
-import {
-  subscribeToChatMessages,
-  addChatMessage,
-  clearChatMessages,
-} from '../firebase/service';
+import { saveChatMessage, subscribeToChatMessages } from '../firebase/service';
+
+export type { ChatMessage };
 
 interface AuraChatbotProps {
   user: UserProfile;
+  firebaseUser?: FirebaseUser | null;
   transactions: Transaction[];
   cards: PaymentCard[];
   budgets: BudgetItem[];
   currentScreen: string;
-  firebaseUser?: FirebaseUser | null;
   onSaveTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  onSaveTransactions?: (transactions: Omit<Transaction, 'id'>[]) => void;
   onDeleteTransaction: (id: string) => void;
   onSaveCard: (card: PaymentCard) => void;
   onSaveBudget: (budget: BudgetItem) => void;
@@ -43,27 +42,27 @@ const QUICK_PROMPTS = [
 
 export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   user,
+  firebaseUser,
   transactions,
   cards,
   budgets,
   currentScreen,
-  firebaseUser,
   onSaveTransaction,
+  onSaveTransactions,
   onDeleteTransaction,
   onSaveCard,
   onSaveBudget,
   onUpdateUser,
   onNavigate,
 }) => {
+  const storageKey = firebaseUser ? `aura_chat_history_${firebaseUser.uid}` : 'aura_chat_history';
+
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
     try {
-      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
-      const saved = localStorage.getItem(key) || sessionStorage.getItem('aura_chat_history');
+      const saved = localStorage.getItem(storageKey) || sessionStorage.getItem('aura_chat_history');
       if (saved) {
         const parsed: ChatMessage[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m));
-        }
+        return parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m));
       }
     } catch {}
     return INITIAL_MESSAGES;
@@ -74,31 +73,20 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync state when switching users
+  // Auto-scroll on new message
   useEffect(() => {
-    const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) {
-        const parsed: ChatMessage[] = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed.map((m) => (m.id === 'msg-intro' ? INITIAL_MESSAGES[0] : m)));
-          return;
-        }
-      }
-    } catch {}
-  }, [firebaseUser?.uid]);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-  // Subscribe to Firestore Chat Messages when signed in
+  // Subscribe to real-time chat messages from Firestore for signed-in users
   useEffect(() => {
     if (!firebaseUser) return;
 
-    const unsubscribe = subscribeToChatMessages(firebaseUser.uid, (synced) => {
-      if (synced && synced.length > 0) {
-        setMessages(synced);
+    const unsubscribe = subscribeToChatMessages(firebaseUser.uid, (remoteMessages) => {
+      if (remoteMessages && remoteMessages.length > 0) {
+        setMessages(remoteMessages);
         try {
-          const key = `aura_chat_history_${firebaseUser.uid}`;
-          localStorage.setItem(key, JSON.stringify(synced));
+          localStorage.setItem(`aura_chat_history_${firebaseUser.uid}`, JSON.stringify(remoteMessages));
         } catch {}
       }
     });
@@ -106,39 +94,19 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
     return () => {
       unsubscribe();
     };
-  }, [firebaseUser?.uid]);
+  }, [firebaseUser]);
 
-  // Auto-scroll on new message or screen active
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, currentScreen]);
-
-  // Save conversation to local storage on every message update
+  // Persist conversation locally for offline & instant reload
   useEffect(() => {
     try {
-      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
-      localStorage.setItem(key, JSON.stringify(messages));
+      localStorage.setItem(storageKey, JSON.stringify(messages));
+      sessionStorage.setItem('aura_chat_history', JSON.stringify(messages));
     } catch {}
-  }, [messages, firebaseUser?.uid]);
-
-  const handleClearChat = async () => {
-    if (firebaseUser) {
-      try {
-        await clearChatMessages(firebaseUser.uid);
-      } catch (err) {
-        console.error('Failed to clear Firestore chat:', err);
-      }
-    }
-    try {
-      const key = `aura_chat_history_${firebaseUser?.uid || 'guest'}`;
-      localStorage.removeItem(key);
-      sessionStorage.removeItem('aura_chat_history');
-    } catch {}
-    setMessages(INITIAL_MESSAGES);
-  };
+  }, [messages, storageKey]);
 
   const executeToolCalls = (functionCalls: any[]): { tool: string; summary: string; icon: string; success: boolean }[] => {
     const executed: { tool: string; summary: string; icon: string; success: boolean }[] = [];
+    const transactionsToAdd: Omit<Transaction, 'id'>[] = [];
 
     for (const call of functionCalls) {
       const { name, args } = call;
@@ -150,7 +118,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
           const category = args.category || (isRecurring ? 'Utilities' : 'General');
           const categoryType = args.categoryType || (isRecurring ? 'BILLS' : 'OTHER');
 
-          onSaveTransaction({
+          const txData: Omit<Transaction, 'id'> = {
             merchant,
             amount: rawAmount,
             category,
@@ -164,7 +132,9 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             isRecurring,
             recurringFrequency: args.recurringFrequency || (isRecurring ? 'Monthly' : undefined),
             notes: args.notes || (isRecurring ? 'Recurring bill added by Copilot' : 'Logged via Copilot'),
-          });
+          };
+
+          transactionsToAdd.push(txData);
 
           executed.push({
             tool: 'addTransaction',
@@ -278,6 +248,15 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       }
     }
 
+    // Atomically persist all added transactions
+    if (transactionsToAdd.length > 0) {
+      if (onSaveTransactions) {
+        onSaveTransactions(transactionsToAdd);
+      } else {
+        transactionsToAdd.forEach((tx) => onSaveTransaction(tx));
+      }
+    }
+
     return executed;
   };
 
@@ -296,13 +275,10 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
-    setIsLoading(true);
-
     if (firebaseUser) {
-      addChatMessage(firebaseUser.uid, userMsg).catch((e) =>
-        console.error('Failed to sync user message to Firestore:', e)
-      );
+      saveChatMessage(firebaseUser.uid, userMsg);
     }
+    setIsLoading(true);
 
     try {
       // Cost-optimized single model
@@ -350,11 +326,8 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
-
       if (firebaseUser) {
-        addChatMessage(firebaseUser.uid, assistantMsg).catch((e) =>
-          console.error('Failed to sync assistant message to Firestore:', e)
-        );
+        saveChatMessage(firebaseUser.uid, assistantMsg);
       }
     } catch (err: any) {
       console.error('Chat error:', err);
@@ -369,11 +342,8 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, errorMsg]);
-
       if (firebaseUser) {
-        addChatMessage(firebaseUser.uid, errorMsg).catch((e) =>
-          console.error('Failed to sync error message to Firestore:', e)
-        );
+        saveChatMessage(firebaseUser.uid, errorMsg);
       }
     } finally {
       setIsLoading(false);
@@ -381,37 +351,9 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   };
 
   return (
-    <div
-      className="w-full max-w-md mx-auto flex flex-col px-4 text-slate-800 dark:text-[#dfe2f1] font-sans relative overflow-hidden"
-      style={{
-        height: 'calc(100dvh - 7.5rem - env(safe-area-inset-top, 0px) - max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px))',
-        maxHeight: 'calc(100dvh - 7.5rem - env(safe-area-inset-top, 0px) - max(calc(env(safe-area-inset-bottom, 0px) - 14px), 0px))',
-        paddingBottom: '0.75rem',
-      }}
-    >
-      {/* Top Bar with Cloud Sync Status & Clear Chat Button */}
-      <div className="flex items-center justify-between py-2 border-b border-slate-200/80 dark:border-white/[0.06] shrink-0 text-xs">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-          <span className="font-semibold text-slate-800 dark:text-[#dfe2f1]">Aura</span>
-          {firebaseUser && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-[#4edea3] font-mono border border-emerald-500/20">
-              Cloud Synced
-            </span>
-          )}
-        </div>
-        <button
-          onClick={handleClearChat}
-          className="flex items-center gap-1 text-[11px] text-slate-500 hover:text-slate-800 dark:text-[#bbcabf] dark:hover:text-white transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-white/[0.05]"
-          title="Clear Conversation"
-        >
-          <span className="material-symbols-outlined text-[15px]">delete_sweep</span>
-          <span>Clear</span>
-        </button>
-      </div>
-
+    <div className="w-full max-w-md mx-auto flex flex-col h-full min-h-0 overflow-hidden px-4 pb-1 text-slate-800 dark:text-[#dfe2f1] font-sans relative">
       {/* Scrollable Message Thread - Plain Text & Left Avatar Layout with Full Light & Dark Support */}
-      <div className="flex-1 overflow-y-auto py-3 space-y-4 no-scrollbar">
+      <div className="flex-1 min-h-0 overflow-y-auto py-2 space-y-4 no-scrollbar">
         {messages.map((m) => (
           <div key={m.id} className="flex items-start gap-3 py-1 animate-in fade-in duration-150">
             {/* Left: Avatar indication */}
@@ -515,7 +457,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       </div>
 
       {/* Quick Suggestion Chips */}
-      <div className="py-2 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-t border-slate-200/80 dark:border-white/[0.04]">
+      <div className="py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-t border-slate-200/80 dark:border-white/[0.04]">
         {QUICK_PROMPTS.map((prompt, idx) => (
           <button
             key={idx}
@@ -528,7 +470,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       </div>
 
       {/* Input Bar */}
-      <div className="pt-2 pb-1 shrink-0">
+      <div className="pt-2 pb-2 shrink-0 relative z-10">
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -543,11 +485,6 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type a request (e.g. 'Add ₹1,200 Electricity bill')..."
             disabled={isLoading}
-            onFocus={() => {
-              setTimeout(() => {
-                messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }, 200);
-            }}
             className="flex-1 h-11 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30 rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs"
           />
           <button

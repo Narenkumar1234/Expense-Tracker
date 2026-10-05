@@ -193,10 +193,25 @@ export default function App() {
     if (!firebaseUser) return;
 
     const unsubscribeTx = subscribeToTransactions(firebaseUser.uid, (syncedTx) => {
-      setTransactions(syncedTx);
-      try {
-        localStorage.setItem('aura_transactions', JSON.stringify(syncedTx));
-      } catch {}
+      if (syncedTx && syncedTx.length > 0) {
+        setTransactions(syncedTx);
+        try {
+          localStorage.setItem('aura_transactions', JSON.stringify(syncedTx));
+        } catch {}
+      } else {
+        // If Firestore returned empty, check if we have local transactions to sync up
+        try {
+          const cached = localStorage.getItem('aura_transactions');
+          if (cached) {
+            const parsed: Transaction[] = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              parsed.forEach((tx) => {
+                addTransaction(firebaseUser.uid, tx).catch(() => {});
+              });
+            }
+          }
+        } catch {}
+      }
     });
 
     const unsubscribeCards = subscribeToCards(firebaseUser.uid, (syncedCards) => {
@@ -326,6 +341,7 @@ export default function App() {
     setCards(updatedCards);
     setBudgets(updatedBudgets);
     setTransactions([]);
+    setCurrentScreen('dashboard');
     setHasCompletedOnboarding(true);
     setCurrentScreen('dashboard');
 
@@ -372,79 +388,96 @@ export default function App() {
     setIsQuickAddOpen(true);
   };
 
-  const handleSaveTransaction = (newTxData: Omit<Transaction, 'id'>) => {
-    const newTx: Transaction = {
-      ...newTxData,
-      id: 'tx-' + Date.now(),
-    };
+  const handleSaveTransactions = (newTxDataList: Omit<Transaction, 'id'>[]) => {
+    if (!newTxDataList || newTxDataList.length === 0) return;
 
-    const updatedTx = [newTx, ...transactions];
-    setTransactions(updatedTx);
+    const baseTimestamp = Date.now();
+    const newTransactions: Transaction[] = newTxDataList.map((data, index) => ({
+      ...data,
+      id: `tx-${baseTimestamp}-${index}-${Math.random().toString(36).substring(2, 7)}`,
+    }));
 
-    // Persist to Firestore if signed in, or Local Storage if guest
-    if (firebaseUser) {
-      addTransaction(firebaseUser.uid, newTx).catch((err) => {
-        console.error('Failed to sync transaction to Firestore:', err);
-      });
-      showToast('Saved', 'saved');
-    } else {
+    // Local-First Persistence: Atomically prepend all new transactions to state and update localStorage
+    setTransactions((prevTx) => {
+      const updatedTx = [...newTransactions, ...prevTx];
       try {
         localStorage.setItem('aura_transactions', JSON.stringify(updatedTx));
       } catch (e) {}
-      showToast('Saved', 'saved');
-    }
+      return updatedTx;
+    });
 
-    // Update budget if expense
-    if (newTx.amount < 0) {
-      const abs = Math.abs(newTx.amount);
-      const updatedBudgets = budgets.map((b) => {
-        if (b.category.toLowerCase() === newTx.categoryType.toLowerCase()) {
-          return { ...b, spent: b.spent + abs };
-        }
-        return b;
+    // Persist all to Firestore if signed in
+    if (firebaseUser) {
+      newTransactions.forEach((tx) => {
+        addTransaction(firebaseUser.uid, tx).catch((err) => {
+          console.warn('Notice: Firestore transaction sync notice:', err);
+        });
       });
-      setBudgets(updatedBudgets);
-
-      if (!firebaseUser) {
-        try {
-          localStorage.setItem('aura_budgets', JSON.stringify(updatedBudgets));
-        } catch {}
-      }
     }
+
+    // Update budgets for all expense transactions
+    setBudgets((prevBudgets) => {
+      let updatedBudgets = [...prevBudgets];
+      for (const tx of newTransactions) {
+        if (tx.amount < 0) {
+          const abs = Math.abs(tx.amount);
+          updatedBudgets = updatedBudgets.map((b) => {
+            if (b.category.toLowerCase() === tx.categoryType.toLowerCase()) {
+              return { ...b, spent: b.spent + abs };
+            }
+            return b;
+          });
+        }
+      }
+      try {
+        localStorage.setItem('aura_budgets', JSON.stringify(updatedBudgets));
+      } catch {}
+      return updatedBudgets;
+    });
+
+    showToast(
+      newTransactions.length > 1
+        ? `${newTransactions.length} transactions saved`
+        : 'Saved',
+      'saved'
+    );
+  };
+
+  const handleSaveTransaction = (newTxData: Omit<Transaction, 'id'>) => {
+    handleSaveTransactions([newTxData]);
   };
 
   const handleDeleteTransaction = (id: string) => {
-    const updated = transactions.filter((t) => t.id !== id);
-    setTransactions(updated);
-
-    if (firebaseUser) {
-      deleteTransaction(firebaseUser.uid, id).catch((err) => {
-        console.error('Failed to delete transaction from Firestore:', err);
-      });
-      showToast('Deleted', 'deleted');
-    } else {
+    setTransactions((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
       try {
         localStorage.setItem('aura_transactions', JSON.stringify(updated));
       } catch {}
-      showToast('Deleted', 'deleted');
+      return updated;
+    });
+
+    if (firebaseUser) {
+      deleteTransaction(firebaseUser.uid, id).catch((err) => {
+        console.warn('Notice: Firestore transaction delete notice:', err);
+      });
     }
+    showToast('Deleted', 'deleted');
   };
 
   const handleSaveCard = (newCard: PaymentCard) => {
     const updatedCards = [newCard, ...cards];
     setCards(updatedCards);
 
+    try {
+      localStorage.setItem('aura_cards', JSON.stringify(updatedCards));
+    } catch {}
+
     if (firebaseUser) {
       addCard(firebaseUser.uid, newCard).catch((err) => {
-        console.error('Failed to add card to Firestore:', err);
+        console.warn('Notice: Firestore card sync notice:', err);
       });
-      showToast('Card linked', 'saved');
-    } else {
-      try {
-        localStorage.setItem('aura_cards', JSON.stringify(updatedCards));
-      } catch {}
-      showToast('Card linked', 'saved');
     }
+    showToast('Card linked', 'saved');
 
     setCurrentScreen('profile');
   };
@@ -453,34 +486,32 @@ export default function App() {
     const updatedBudgets = [...budgets, newBudget];
     setBudgets(updatedBudgets);
 
+    try {
+      localStorage.setItem('aura_budgets', JSON.stringify(updatedBudgets));
+    } catch {}
+
     if (firebaseUser) {
       addBudget(firebaseUser.uid, newBudget).catch((err) => {
-        console.error('Failed to add budget to Firestore:', err);
+        console.warn('Notice: Firestore budget sync notice:', err);
       });
-      showToast('Budget created', 'saved');
-    } else {
-      try {
-        localStorage.setItem('aura_budgets', JSON.stringify(updatedBudgets));
-      } catch {}
-      showToast('Budget created', 'saved');
     }
+    showToast('Budget created', 'saved');
   };
 
   const handleUpdateUser = (updated: Partial<UserProfile>) => {
     const updatedUser = { ...user, ...updated };
     setUser(updatedUser);
 
+    try {
+      localStorage.setItem('aura_user_profile', JSON.stringify(updatedUser));
+    } catch {}
+
     if (firebaseUser) {
       saveUserProfile(firebaseUser.uid, updated).catch((err) => {
-        console.error('Failed to update user profile in Firestore:', err);
+        console.warn('Notice: Firestore user profile sync notice:', err);
       });
-      showToast('Profile updated', 'updated');
-    } else {
-      try {
-        localStorage.setItem('aura_user_profile', JSON.stringify(updatedUser));
-      } catch {}
-      showToast('Profile updated', 'updated');
     }
+    showToast('Profile updated', 'updated');
   };
 
   // If onboarding is not completed, render Onboarding Screen
@@ -553,16 +584,27 @@ export default function App() {
               />
             )}
 
-            <div className={currentScreen === 'assistant' ? 'h-full flex flex-col' : 'hidden'}>
+            <div
+              className={
+                currentScreen === 'assistant'
+                  ? 'w-full flex-1 flex flex-col overflow-hidden relative'
+                  : 'hidden'
+              }
+              style={{
+                height: 'calc(100dvh - 4rem - 3.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+                maxHeight: 'calc(100dvh - 4rem - 3.75rem - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))',
+              }}
+            >
               {firebaseUser ? (
                 <AuraChatbot
                   user={user}
+                  firebaseUser={firebaseUser}
                   transactions={transactions}
                   cards={cards}
                   budgets={budgets}
                   currentScreen={currentScreen}
-                  firebaseUser={firebaseUser}
                   onSaveTransaction={handleSaveTransaction}
+                  onSaveTransactions={handleSaveTransactions}
                   onDeleteTransaction={handleDeleteTransaction}
                   onSaveCard={handleSaveCard}
                   onSaveBudget={handleSaveBudget}
@@ -572,7 +614,7 @@ export default function App() {
               ) : (
                 <div className="w-full max-w-md mx-auto min-h-[65vh] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-200">
                   {/* Rainbow Theme Border Showcase Box */}
-                  <div className="relative p-[2.5px] rounded-2xl bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] shadow-[0_0_32px_rgba(255,59,48,0.25),0_0_32px_rgba(0,122,255,0.25),0_0_24px_rgba(52,199,89,0.25)] mb-4">
+                  <div className="relative p-[2.5px] rounded-2xl bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] mb-4">
                     <div className="w-16 h-16 rounded-[13.5px] bg-white dark:bg-[#171b26] flex items-center justify-center">
                       <span className="material-symbols-outlined text-[32px] bg-gradient-to-tr from-[#ff3b30] via-[#af52de] to-[#007aff] bg-clip-text text-transparent">
                         chat

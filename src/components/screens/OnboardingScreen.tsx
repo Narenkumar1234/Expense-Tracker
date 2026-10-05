@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile, PaymentCard, BudgetItem } from '../../types';
-import { AURA_LOGO_URL } from '../../data/mockData';
 import { ThemeSwitcher } from '../ThemeSwitcher';
 import { User as FirebaseUser } from 'firebase/auth';
+import { AuraLogo } from '../AuraLogo';
 
 interface OnboardingScreenProps {
   onComplete: (data: {
@@ -230,9 +230,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         /* Step 1 Top Bar: Logo + AURA on left, Help / Skip / Profile-Theme on right */
         <div className="relative z-10 flex items-center justify-between pt-1">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-[#171b26] border border-emerald-500/30 flex items-center justify-center p-1 shadow-sm dark:shadow-[0_0_12px_rgba(16,185,129,0.3)]">
-              <img src={AURA_LOGO_URL} alt="Aura" className="w-full h-full object-contain" />
-            </div>
+            <AuraLogo size={28} iconSize={13} />
             <span className="font-extrabold tracking-wider text-base text-slate-900 dark:text-white">
               AURA
             </span>
@@ -263,9 +261,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         <div className="relative z-10 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl overflow-hidden bg-white dark:bg-[#171b26] border border-emerald-500/30 flex items-center justify-center p-1 shadow-sm">
-                <img src={AURA_LOGO_URL} alt="Aura" className="w-full h-full object-contain" />
-              </div>
+              <AuraLogo size={28} iconSize={13} />
               <div>
                 <span className="font-bold tracking-tight text-sm text-slate-900 dark:text-white">Aura</span>
                 <span className="text-[10px] text-slate-500 dark:text-[#bbcabf] ml-1.5 font-mono">Ledger Setup</span>
