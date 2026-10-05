@@ -101,6 +101,7 @@ export interface ChatMessage {
     summary: string;
     icon: string;
     success: boolean;
+    transactionId?: string;
   }[];
 }
 

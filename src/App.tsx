@@ -123,6 +123,7 @@ export default function App() {
   // Modals state
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [quickAddType, setQuickAddType] = useState<'expense' | 'income'>('expense');
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [isCreateBudgetOpen, setIsCreateBudgetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -388,13 +389,13 @@ export default function App() {
     setIsQuickAddOpen(true);
   };
 
-  const handleSaveTransactions = (newTxDataList: Omit<Transaction, 'id'>[]) => {
+  const handleSaveTransactions = (newTxDataList: (Omit<Transaction, 'id'> | Transaction)[]) => {
     if (!newTxDataList || newTxDataList.length === 0) return;
 
     const baseTimestamp = Date.now();
     const newTransactions: Transaction[] = newTxDataList.map((data, index) => ({
       ...data,
-      id: `tx-${baseTimestamp}-${index}-${Math.random().toString(36).substring(2, 7)}`,
+      id: (data as any).id || `tx-${baseTimestamp}-${index}-${Math.random().toString(36).substring(2, 7)}`,
     }));
 
     // Local-First Persistence: Atomically prepend all new transactions to state and update localStorage
@@ -445,6 +446,53 @@ export default function App() {
 
   const handleSaveTransaction = (newTxData: Omit<Transaction, 'id'>) => {
     handleSaveTransactions([newTxData]);
+  };
+
+  const handleUpdateTransaction = (updatedTx: Transaction) => {
+    const previousTx = transactions.find((t) => t.id === updatedTx.id);
+
+    setTransactions((prev) => {
+      const updated = prev.map((t) => (t.id === updatedTx.id ? updatedTx : t));
+      try {
+        localStorage.setItem('aura_transactions', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+
+    if (firebaseUser) {
+      addTransaction(firebaseUser.uid, updatedTx).catch((err) => {
+        console.warn('Notice: Firestore transaction update notice:', err);
+      });
+    }
+
+    // Rebalance budgets if applicable
+    if (previousTx && (previousTx.amount < 0 || updatedTx.amount < 0)) {
+      setBudgets((prevBudgets) => {
+        let updatedBudgets = [...prevBudgets];
+        if (previousTx.amount < 0) {
+          const oldAbs = Math.abs(previousTx.amount);
+          updatedBudgets = updatedBudgets.map((b) =>
+            b.category.toLowerCase() === previousTx.categoryType.toLowerCase()
+              ? { ...b, spent: Math.max(0, b.spent - oldAbs) }
+              : b
+          );
+        }
+        if (updatedTx.amount < 0) {
+          const newAbs = Math.abs(updatedTx.amount);
+          updatedBudgets = updatedBudgets.map((b) =>
+            b.category.toLowerCase() === updatedTx.categoryType.toLowerCase()
+              ? { ...b, spent: b.spent + newAbs }
+              : b
+          );
+        }
+        try {
+          localStorage.setItem('aura_budgets', JSON.stringify(updatedBudgets));
+        } catch {}
+        return updatedBudgets;
+      });
+    }
+
+    showToast('Transaction updated', 'updated');
   };
 
   const handleDeleteTransaction = (id: string) => {
@@ -610,6 +658,7 @@ export default function App() {
                   onSaveBudget={handleSaveBudget}
                   onUpdateUser={handleUpdateUser}
                   onNavigate={handleNavigate}
+                  onSelectTransaction={(tx) => setSelectedTx(tx)}
                 />
               ) : (
                 <div className="w-full max-w-md mx-auto min-h-[65vh] flex flex-col items-center justify-center px-6 py-12 text-center animate-in fade-in duration-200">
@@ -695,14 +744,23 @@ export default function App() {
         </div>
       </div>
 
-      {/* Quick Add Modal */}
+      {/* Quick Add / Edit Transaction Modal */}
       {isQuickAddOpen && (
         <QuickAddModal
-          initialType={quickAddType}
+          initialType={editingTx ? (editingTx.amount > 0 ? 'income' : 'expense') : quickAddType}
+          editTransaction={editingTx}
           cards={cards}
           user={user}
-          onClose={() => setIsQuickAddOpen(false)}
+          onClose={() => {
+            setIsQuickAddOpen(false);
+            setEditingTx(null);
+          }}
           onSaveTransaction={handleSaveTransaction}
+          onUpdateTransaction={(updated) => {
+            handleUpdateTransaction(updated);
+            setIsQuickAddOpen(false);
+            setEditingTx(null);
+          }}
         />
       )}
 
@@ -711,7 +769,15 @@ export default function App() {
         <TransactionDetailModal
           transaction={selectedTx}
           onClose={() => setSelectedTx(null)}
-          onDelete={handleDeleteTransaction}
+          onDelete={(id) => {
+            handleDeleteTransaction(id);
+            setSelectedTx(null);
+          }}
+          onEdit={(tx) => {
+            setSelectedTx(null);
+            setEditingTx(tx);
+            setIsQuickAddOpen(true);
+          }}
         />
       )}
 

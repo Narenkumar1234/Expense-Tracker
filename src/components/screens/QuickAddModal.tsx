@@ -3,24 +3,67 @@ import { Transaction, PaymentCard, UserProfile } from '../../types';
 
 interface QuickAddModalProps {
   initialType?: 'expense' | 'income';
+  editTransaction?: Transaction | null;
   cards: PaymentCard[];
   user: UserProfile;
   onClose: () => void;
   onSaveTransaction: (tx: Omit<Transaction, 'id'>) => void;
+  onUpdateTransaction?: (tx: Transaction) => void;
 }
 
 export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   initialType = 'expense',
+  editTransaction,
   cards,
   user,
   onClose,
   onSaveTransaction,
+  onUpdateTransaction,
 }) => {
-  const [txType, setTxType] = useState<'expense' | 'income'>(initialType);
+  const initialTxType = editTransaction
+    ? editTransaction.amount > 0
+      ? 'income'
+      : 'expense'
+    : initialType;
+
+  const [txType, setTxType] = useState<'expense' | 'income'>(initialTxType);
   const [currency, setCurrency] = useState<'INR (₹)' | 'USD ($)' | 'EUR (€)'>('INR (₹)');
-  const [amountString, setAmountString] = useState('845.00');
-  const [selectedCategory, setSelectedCategory] = useState('Food');
-  const [selectedCardId, setSelectedCardId] = useState(cards[0]?.id || 'card-1');
+  const [amountString, setAmountString] = useState(
+    editTransaction ? Math.abs(editTransaction.amount).toString() : '845.00'
+  );
+
+  const initialCat = () => {
+    if (!editTransaction) return initialTxType === 'income' ? 'Salary' : 'Food';
+    const t = (editTransaction.categoryType || '').toUpperCase();
+    const n = (editTransaction.category || '').toLowerCase();
+    if (t === 'FOOD' || n.includes('food') || n.includes('dinner') || n.includes('dining')) return 'Food';
+    if (t === 'GROCERIES' || n.includes('grocer')) return 'Groceries';
+    if (t === 'TRANSPORT' || n.includes('transit') || n.includes('fuel') || n.includes('uber') || n.includes('travel')) return 'Transport';
+    if (t === 'SHOPPING' || n.includes('shop') || n.includes('amazon') || n.includes('flipkart')) return 'Shopping';
+    if (t === 'BILLS' || n.includes('bill') || n.includes('electricity') || n.includes('rent') || n.includes('loan') || n.includes('maintenance')) return 'Bills';
+    if (t === 'ENTERTAINMENT' || n.includes('fun') || n.includes('movie') || n.includes('netflix')) return 'Fun';
+    if (t === 'HEALTH' || n.includes('health') || n.includes('med') || n.includes('gym')) return 'Health';
+    if (t === 'SALARY' || n.includes('salary')) return 'Salary';
+    if (t === 'INVESTMENT' || n.includes('stock')) return 'Stocks';
+    if (t === 'INCOME' || n.includes('freelance')) return 'Freelance';
+    return editTransaction.amount > 0 ? 'Salary' : 'Other';
+  };
+
+  const [selectedCategory, setSelectedCategory] = useState(initialCat);
+
+  const initialCardId = () => {
+    if (editTransaction) {
+      const found = cards.find(
+        (c) =>
+          editTransaction.account.includes(c.last4) ||
+          editTransaction.account.toLowerCase().includes(c.bankName.toLowerCase().split(' ')[0])
+      );
+      if (found) return found.id;
+    }
+    return cards[0]?.id || 'card-1';
+  };
+
+  const [selectedCardId, setSelectedCardId] = useState(initialCardId);
 
   // Dynamic live current date and time
   const getCurrentFormattedDateTime = () => {
@@ -30,13 +73,23 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     return `Today, ${timeStr} • ${dateStr}`;
   };
 
-  const [dateTime] = useState(getCurrentFormattedDateTime());
-  const [merchantNote, setMerchantNote] = useState('Dinner with Sarah at Osteria');
+  const [dateTime] = useState(
+    editTransaction
+      ? `${editTransaction.date} • ${editTransaction.time}`
+      : getCurrentFormattedDateTime()
+  );
+  const [merchantNote, setMerchantNote] = useState(
+    editTransaction ? (editTransaction.merchant || editTransaction.notes || '') : 'Dinner with Sarah at Osteria'
+  );
 
-  // Recurring disabled initially (false)
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [recurringFrequency, setRecurringFrequency] = useState<'Daily' | 'Weekly' | 'Monthly' | 'Yearly'>('Monthly');
-  const [recurringMonths, setRecurringMonths] = useState<number>(6);
+  // Recurring settings
+  const [isRecurring, setIsRecurring] = useState(Boolean(editTransaction?.isRecurring));
+  const [recurringFrequency, setRecurringFrequency] = useState<'Daily' | 'Weekly' | 'Monthly' | 'Yearly'>(
+    editTransaction?.recurringFrequency || 'Monthly'
+  );
+  const [recurringMonths, setRecurringMonths] = useState<number>(
+    editTransaction?.recurringDurationMonths || 6
+  );
   const [recurringEntryMode, setRecurringEntryMode] = useState<'per_cycle' | 'total_contract'>('per_cycle');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -124,29 +177,56 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     };
 
     setTimeout(() => {
-      onSaveTransaction({
-        merchant: merchantNote.trim() || (txType === 'income' ? 'Income Deposit' : 'New Entry'),
-        category: selectedCategory.toUpperCase(),
-        categoryType: categoryTypeMap[selectedCategory] || 'OTHER',
-        amount: finalAmount,
-        date: new Date().toISOString().split('T')[0],
-        dateGroup: 'TODAY',
-        time: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        account: selectedCard ? `${selectedCard.bankName.split(' ')[0]} ${selectedCard.variant}` : 'Aura Vault',
-        status: 'completed',
-        icon: currentCategories.find((c) => c.id === selectedCategory)?.icon || 'receipt',
-        notes: merchantNote,
-        isRecurring: txType === 'expense' ? isRecurring : false,
-        recurringDurationMonths: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-        recurringFrequency: txType === 'expense' && isRecurring ? recurringFrequency : undefined,
-        monthlyEquivalent: txType === 'expense' && isRecurring ? monthlyEquivalent : undefined,
-        totalCommitment: txType === 'expense' && isRecurring ? totalCommitment : undefined,
-        remainingCycles: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-        cycleEndDate: txType === 'expense' && isRecurring ? cycleEndDate : undefined,
-      });
+      const finalMerchant = merchantNote.trim() || (txType === 'income' ? 'Income Deposit' : 'New Entry');
+      const finalCategory = selectedCategory.toUpperCase();
+      const finalCategoryType = categoryTypeMap[selectedCategory] || 'OTHER';
+      const finalIcon = currentCategories.find((c) => c.id === selectedCategory)?.icon || 'receipt';
+      const finalAccount = selectedCard ? `${selectedCard.bankName.split(' ')[0]} ${selectedCard.variant}` : 'Aura Vault';
+
+      if (editTransaction && onUpdateTransaction) {
+        onUpdateTransaction({
+          ...editTransaction,
+          merchant: finalMerchant,
+          category: finalCategory,
+          categoryType: finalCategoryType,
+          amount: finalAmount,
+          account: finalAccount,
+          icon: finalIcon,
+          notes: merchantNote,
+          isRecurring: txType === 'expense' ? isRecurring : false,
+          recurringDurationMonths: txType === 'expense' && isRecurring ? recurringMonths : undefined,
+          recurringFrequency: txType === 'expense' && isRecurring ? recurringFrequency : undefined,
+          monthlyEquivalent: txType === 'expense' && isRecurring ? monthlyEquivalent : undefined,
+          totalCommitment: txType === 'expense' && isRecurring ? totalCommitment : undefined,
+          remainingCycles: txType === 'expense' && isRecurring ? recurringMonths : undefined,
+          cycleEndDate: txType === 'expense' && isRecurring ? cycleEndDate : undefined,
+        });
+      } else {
+        onSaveTransaction({
+          merchant: finalMerchant,
+          category: finalCategory,
+          categoryType: finalCategoryType,
+          amount: finalAmount,
+          date: new Date().toISOString().split('T')[0],
+          dateGroup: 'TODAY',
+          time: 'Today, ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          account: finalAccount,
+          status: 'completed',
+          icon: finalIcon,
+          notes: merchantNote,
+          isRecurring: txType === 'expense' ? isRecurring : false,
+          recurringDurationMonths: txType === 'expense' && isRecurring ? recurringMonths : undefined,
+          recurringFrequency: txType === 'expense' && isRecurring ? recurringFrequency : undefined,
+          monthlyEquivalent: txType === 'expense' && isRecurring ? monthlyEquivalent : undefined,
+          totalCommitment: txType === 'expense' && isRecurring ? totalCommitment : undefined,
+          remainingCycles: txType === 'expense' && isRecurring ? recurringMonths : undefined,
+          cycleEndDate: txType === 'expense' && isRecurring ? cycleEndDate : undefined,
+        });
+      }
+
       setIsSaving(false);
       onClose();
-    }, 500);
+    }, 300);
   };
 
   const getCurrencySymbol = () => {
@@ -182,7 +262,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                 </span>
               </div>
               <h1 className="text-base font-bold text-[#dfe2f1]">
-                Add Transaction
+                {editTransaction ? 'Edit Transaction' : 'Add Transaction'}
               </h1>
             </div>
 
@@ -554,7 +634,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">check_circle</span>
-                  <span>Save {txType === 'expense' ? 'Expense' : 'Income'}</span>
+                  <span>{editTransaction ? 'Save Changes' : `Save ${txType === 'expense' ? 'Expense' : 'Income'}`}</span>
                 </>
               )}
             </button>
