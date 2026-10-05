@@ -124,7 +124,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
         {searchQuery && (
           <button
             onClick={() => setSearchQuery('')}
-            className="absolute right-2.5 top-3 text-[#bbcabf] hover:text-white"
+            className="absolute right-2.5 top-3 text-slate-500 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-white transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">close</span>
           </button>
@@ -162,7 +162,7 @@ export const TransactionsScreen: React.FC<TransactionsScreenProps> = ({
               className="bg-transparent text-xs font-bold text-[#dfe2f1] appearance-none focus:outline-none pr-5 cursor-pointer"
             >
               {previousYearMonths.map((m) => (
-                <option key={m} value={m} className="bg-[#171b26] text-[#dfe2f1] py-1">
+                <option key={m} value={m} className="bg-white text-slate-900 dark:bg-[#171b26] dark:text-[#dfe2f1] py-1">
                   {m}
                 </option>
               ))}
@@ -349,7 +349,7 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
         </div>
         <div>
           <div className="flex items-center min-w-0">
-            <span className="text-sm font-semibold text-[#dfe2f1] group-hover:text-white transition-colors truncate">
+            <span className="text-sm font-semibold text-[#dfe2f1] group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
               {tx.merchant}
             </span>
             {tx.isRecurring && (
@@ -381,13 +381,13 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
                     />
                     <div
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-[#171b26] border border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
+                      className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-white dark:bg-[#171b26] border border-slate-200 dark:border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
                     >
-                      <div className="flex items-center gap-1.5 font-bold text-[#4edea3] mb-0.5">
+                      <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-[#4edea3] mb-0.5">
                         <span className="material-symbols-outlined text-[14px]">sync</span>
                         <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month Plan` : 'Recurring Auto-debit'}</span>
                       </div>
-                      <div className="text-[11px] text-[#bbcabf] font-mono">
+                      <div className="text-[11px] text-slate-600 dark:text-[#bbcabf] font-mono">
                         {tx.monthlyEquivalent ? `₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`}
                       </div>
                     </div>
@@ -396,8 +396,8 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-[#bbcabf] mt-0.5">
-            <span className="px-1.5 py-0.2 rounded bg-white/5 text-[9px] font-bold tracking-wider text-slate-300 uppercase">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#bbcabf] mt-0.5">
+            <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/5 text-[9px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
               {tx.category}
             </span>
             <span>•</span>

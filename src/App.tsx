@@ -36,6 +36,7 @@ import {
   deleteTransaction,
   subscribeToCards,
   addCard,
+  deleteCard,
   subscribeToBudgets,
   addBudget,
   saveUserProfile,
@@ -125,6 +126,7 @@ export default function App() {
   const [quickAddType, setQuickAddType] = useState<'expense' | 'income'>('expense');
   const [editingTx, setEditingTx] = useState<Transaction | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [editingCard, setEditingCard] = useState<PaymentCard | null>(null);
   const [isCreateBudgetOpen, setIsCreateBudgetOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'saved' | 'deleted' | 'updated' } | null>(null);
@@ -530,6 +532,40 @@ export default function App() {
     setCurrentScreen('profile');
   };
 
+  const handleUpdateCard = (updatedCard: PaymentCard) => {
+    const updatedCards = cards.map((c) => (c.id === updatedCard.id ? updatedCard : c));
+    setCards(updatedCards);
+
+    try {
+      localStorage.setItem('aura_cards', JSON.stringify(updatedCards));
+    } catch {}
+
+    if (firebaseUser) {
+      addCard(firebaseUser.uid, updatedCard).catch((err) => {
+        console.warn('Notice: Firestore card update notice:', err);
+      });
+    }
+    showToast('Card updated', 'saved');
+    setEditingCard(null);
+    setCurrentScreen('profile');
+  };
+
+  const handleDeleteCard = (cardId: string) => {
+    const updatedCards = cards.filter((c) => c.id !== cardId);
+    setCards(updatedCards);
+
+    try {
+      localStorage.setItem('aura_cards', JSON.stringify(updatedCards));
+    } catch {}
+
+    if (firebaseUser) {
+      deleteCard(firebaseUser.uid, cardId).catch((err) => {
+        console.warn('Notice: Firestore card delete notice:', err);
+      });
+    }
+    showToast('Card removed', 'deleted');
+  };
+
   const handleSaveBudget = (newBudget: BudgetItem) => {
     const updatedBudgets = [...budgets, newBudget];
     setBudgets(updatedBudgets);
@@ -709,11 +745,19 @@ export default function App() {
             {currentScreen === 'profile' && (
               <div className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm backdrop-fade-in">
                 <div className="absolute inset-0 -z-10" onClick={handleBackFromProfile} />
-                <div className="w-full max-w-md h-full bg-[#0f131d] overflow-y-auto no-scrollbar border-l border-white/10 shadow-2xl drawer-slide-right">
+                <div className="w-full max-w-md h-full bg-white dark:bg-[#0f131d] text-slate-800 dark:text-[#dfe2f1] overflow-y-auto no-scrollbar border-l border-slate-200 dark:border-white/10 shadow-2xl drawer-slide-right">
                   <ProfileScreen
                     user={user}
                     cards={cards}
-                    onOpenAddCard={() => handleNavigate('addCard')}
+                    onOpenAddCard={() => {
+                      setEditingCard(null);
+                      handleNavigate('addCard');
+                    }}
+                    onEditCard={(card) => {
+                      setEditingCard(card);
+                      handleNavigate('addCard');
+                    }}
+                    onDeleteCard={handleDeleteCard}
                     onUpdateUser={handleUpdateUser}
                     onBack={handleBackFromProfile}
                     firebaseUser={firebaseUser}
@@ -727,8 +771,13 @@ export default function App() {
             {currentScreen === 'addCard' && (
               <AddCardModal
                 user={user}
-                onClose={() => setCurrentScreen('profile')}
+                editCard={editingCard}
+                onClose={() => {
+                  setEditingCard(null);
+                  setCurrentScreen('profile');
+                }}
                 onSaveCard={handleSaveCard}
+                onUpdateCard={handleUpdateCard}
               />
             )}
           </main>

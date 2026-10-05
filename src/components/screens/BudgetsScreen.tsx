@@ -41,23 +41,23 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
         </div>
 
         {/* Monthly vs Goals toggle */}
-        <div className="bg-[#171b26] p-1 rounded-full flex items-center border border-white/[0.04]">
+        <div className="bg-slate-100 dark:bg-[#171b26] p-1 rounded-full flex items-center border border-slate-200/80 dark:border-white/[0.04]">
           <button
             onClick={() => setActiveTab('Monthly')}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'Monthly'
-                ? 'bg-[#10b981] text-[#002113] shadow-md'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+                ? 'bg-emerald-600 text-white dark:bg-[#10b981] dark:text-[#002113] shadow-md font-bold'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-[#dfe2f1]'
             }`}
           >
             Monthly
           </button>
           <button
             onClick={() => setActiveTab('Goals')}
-            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               activeTab === 'Goals'
-                ? 'bg-[#10b981] text-[#002113] shadow-md'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+                ? 'bg-emerald-600 text-white dark:bg-[#10b981] dark:text-[#002113] shadow-md font-bold'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-[#dfe2f1]'
             }`}
           >
             Goals
@@ -262,11 +262,11 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
         <div className="flex items-center justify-between px-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-[#dfe2f1]">Savings Goals</span>
-            <span className="px-2 py-0.2 rounded-full bg-[#3131c0]/20 text-[#c0c1ff] text-[11px] font-bold">
+            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-[#3131c0]/20 dark:text-[#c0c1ff] dark:border-transparent text-[11px] font-bold">
               {savingsGoals.length} Active
             </span>
           </div>
-          <button className="text-xs font-semibold text-[#4edea3] hover:underline flex items-center gap-0.5">
+          <button className="text-xs font-semibold text-emerald-600 dark:text-[#4edea3] hover:underline flex items-center gap-0.5 cursor-pointer">
             <span>View All</span>
             <span className="material-symbols-outlined text-[15px]">chevron_right</span>
           </button>
@@ -277,16 +277,16 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
           <div className="p-4 rounded-xl bg-[#1c1f2a] border border-white/[0.04] space-y-2.5 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#10b981]/15 text-[#4edea3] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 dark:bg-[#10b981]/15 dark:text-[#4edea3] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[22px]">shield</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-[#dfe2f1]">Emergency Fund</span>
-                    <span className="px-1.5 py-0.2 rounded bg-white/5 text-[#4edea3] text-[9px] font-bold">
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/5 text-emerald-700 dark:text-[#4edea3] text-[9px] font-bold">
                       Tier 1
                     </span>
-                    <span className="px-1.5 py-0.2 rounded bg-[#10b981]/20 text-[#4edea3] text-[9px] font-bold flex items-center gap-0.5">
+                    <span className="px-1.5 py-0.2 rounded bg-emerald-100 text-emerald-800 dark:bg-[#10b981]/20 dark:text-[#4edea3] text-[9px] font-bold flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-[11px]">flag</span>
                       Milestone
                     </span>
@@ -297,7 +297,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
                 </div>
               </div>
 
-              <span className="text-sm font-mono font-bold text-[#4edea3]">
+              <span className="text-sm font-mono font-bold text-emerald-600 dark:text-[#4edea3]">
                 84%
               </span>
             </div>
@@ -305,14 +305,14 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
             {/* Progress bar */}
             <div className="w-full h-2 rounded-full bg-[#0f131d] overflow-hidden">
               <div
-                className="h-full bg-[#4edea3] rounded-full"
+                className="h-full bg-emerald-500 dark:bg-[#4edea3] rounded-full"
                 style={{ width: '84%' }}
               />
             </div>
 
             <div className="flex items-center justify-between text-xs text-[#bbcabf]">
               <span className="font-mono">Remaining: ₹16,000</span>
-              <span className="text-[#4edea3] font-semibold flex items-center gap-1">
+              <span className="text-emerald-600 dark:text-[#4edea3] font-semibold flex items-center gap-1">
                 <span className="material-symbols-outlined text-[14px]">trending_up</span>
                 On Track (+2mo ahead)
               </span>
@@ -323,13 +323,13 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
           <div className="p-4 rounded-xl bg-[#1c1f2a] border border-white/[0.04] space-y-2.5 shadow-sm">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#3131c0]/20 text-[#c0c1ff] flex items-center justify-center">
+                <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-800 dark:bg-[#3131c0]/20 dark:text-[#c0c1ff] flex items-center justify-center">
                   <span className="material-symbols-outlined text-[22px]">flight</span>
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-bold text-[#dfe2f1]">Japan Vacation</span>
-                    <span className="px-1.5 py-0.2 rounded bg-[#3131c0]/30 text-[#c0c1ff] text-[9px] font-bold flex items-center gap-0.5">
+                    <span className="px-1.5 py-0.2 rounded bg-indigo-100 text-indigo-800 dark:bg-[#3131c0]/30 dark:text-[#c0c1ff] text-[9px] font-bold flex items-center gap-0.5">
                       <span className="material-symbols-outlined text-[11px]">sync</span>
                       Auto-save
                     </span>
@@ -346,7 +346,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
                 <span className="font-mono text-base font-bold text-[#dfe2f1]">₹21,500</span>
                 <span className="font-mono text-xs text-[#bbcabf]"> of ₹35,000</span>
               </div>
-              <span className="font-mono font-bold text-[#c0c1ff]">61%</span>
+              <span className="font-mono font-bold text-indigo-600 dark:text-[#c0c1ff]">61%</span>
             </div>
 
             {/* Progress bar */}

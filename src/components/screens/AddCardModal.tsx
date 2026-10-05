@@ -3,8 +3,10 @@ import { PaymentCard, UserProfile } from '../../types';
 
 interface AddCardModalProps {
   user: UserProfile;
+  editCard?: PaymentCard | null;
   onClose: () => void;
   onSaveCard: (card: PaymentCard) => void;
+  onUpdateCard?: (card: PaymentCard) => void;
 }
 
 interface BankOption {
@@ -76,21 +78,40 @@ const AVAILABLE_BANKS: BankOption[] = [
 
 export const AddCardModal: React.FC<AddCardModalProps> = ({
   user,
+  editCard,
   onClose,
   onSaveCard,
+  onUpdateCard,
 }) => {
-  // Step state: 'bank' -> 'details'
-  const [step, setStep] = useState<'bank' | 'details'>('bank');
+  // Step state: if editing, start directly on details
+  const [step, setStep] = useState<'bank' | 'details'>(editCard ? 'details' : 'bank');
 
   // Form states
-  const [selectedBank, setSelectedBank] = useState<BankOption>(AVAILABLE_BANKS[0]);
-  const [cardType, setCardType] = useState<'credit' | 'debit'>('credit');
+  const initialBank = () => {
+    if (editCard) {
+      const bName = editCard.bankName.toLowerCase();
+      const match = AVAILABLE_BANKS.find(
+        (b) => bName.includes(b.id) || b.name.toLowerCase().includes(bName)
+      );
+      if (match) return match;
+    }
+    return AVAILABLE_BANKS[0];
+  };
+
+  const [selectedBank, setSelectedBank] = useState<BankOption>(initialBank);
+  const [cardType, setCardType] = useState<'credit' | 'debit'>(editCard?.type || 'credit');
 
   // Card state - only last 4 digits needed
-  const [last4, setLast4] = useState('4829');
-  const [cardHolder, setCardHolder] = useState(user.name.toUpperCase());
-  const [expiry, setExpiry] = useState('08/29');
-  const [creditLimit, setCreditLimit] = useState('2,50,000');
+  const [last4, setLast4] = useState(editCard ? editCard.last4 : '4829');
+  const [cardHolder, setCardHolder] = useState(
+    editCard?.cardholderName || user.name.toUpperCase()
+  );
+  const [expiry, setExpiry] = useState(editCard?.expiry || '08/29');
+  const [creditLimit, setCreditLimit] = useState(
+    editCard?.creditLimit
+      ? editCard.creditLimit.toLocaleString('en-IN')
+      : '2,50,000'
+  );
   const [statementDay, setStatementDay] = useState('15');
 
   const [isProcessing, setIsProcessing] = useState(false);
@@ -124,57 +145,76 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
 
       const formattedLast4 = last4.trim() || '4829';
 
-      const newCard: PaymentCard = {
-        id: 'card-' + Date.now(),
-        bankName: selectedBank.name,
-        variant: cardType === 'credit' ? 'Credit Card' : 'Debit Card',
-        cardholderName: cardHolder.toUpperCase() || user.name.toUpperCase(),
-        cardNumber: `•••• •••• •••• ${formattedLast4}`,
-        last4: formattedLast4,
-        expiry: expiry || '08/29',
-        network: getNetwork() as any,
-        type: cardType,
-        creditLimit: parseInt(creditLimit.replace(/,/g, '')) || 250000,
-        unbilledSpend: 0,
-        statementDate: `${statementDay}th of every month`,
-        dueDate: '5th of following month',
-        isDefault: false,
-      };
-
-      onSaveCard(newCard);
+      if (editCard && onUpdateCard) {
+        const updated: PaymentCard = {
+          ...editCard,
+          bankName: selectedBank.name,
+          variant: editCard.variant || (cardType === 'credit' ? 'Credit Card' : 'Debit Card'),
+          cardholderName: cardHolder.toUpperCase() || user.name.toUpperCase(),
+          cardNumber: `•••• •••• •••• ${formattedLast4}`,
+          last4: formattedLast4,
+          expiry: expiry || '08/29',
+          network: getNetwork() as any,
+          type: cardType,
+          creditLimit: parseInt(creditLimit.replace(/,/g, '')) || 250000,
+        };
+        onUpdateCard(updated);
+      } else {
+        const newCard: PaymentCard = {
+          id: 'card-' + Date.now(),
+          bankName: selectedBank.name,
+          variant: cardType === 'credit' ? 'Credit Card' : 'Debit Card',
+          cardholderName: cardHolder.toUpperCase() || user.name.toUpperCase(),
+          cardNumber: `•••• •••• •••• ${formattedLast4}`,
+          last4: formattedLast4,
+          expiry: expiry || '08/29',
+          network: getNetwork() as any,
+          type: cardType,
+          creditLimit: parseInt(creditLimit.replace(/,/g, '')) || 250000,
+          unbilledSpend: 0,
+          statementDate: `${statementDay}th of every month`,
+          dueDate: '5th of following month',
+          isDefault: false,
+        };
+        onSaveCard(newCard);
+      }
 
       setTimeout(() => {
         onClose();
-      }, 1000);
-    }, 900);
+      }, 700);
+    }, 600);
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#0f131d] overflow-y-auto no-scrollbar flex flex-col justify-between">
+    <div className="fixed inset-0 z-50 bg-white dark:bg-[#0f131d] text-slate-800 dark:text-[#dfe2f1] overflow-y-auto no-scrollbar flex flex-col justify-between">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 bg-[#0f131d]/90 backdrop-blur-xl border-b border-white/[0.04]">
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-[#0f131d]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.04]">
         <div className="h-16 px-4 max-w-md mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button
-              onClick={step === 'details' ? () => setStep('bank') : onClose}
-              className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-[#dfe2f1] hover:text-[#4edea3] transition-colors"
+              onClick={step === 'details' && !editCard ? () => setStep('bank') : onClose}
+              className="w-10 h-10 -ml-2 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-[#dfe2f1] dark:hover:text-[#4edea3] transition-colors cursor-pointer"
               aria-label="Back"
             >
               <span className="material-symbols-outlined text-[24px]">arrow_back</span>
             </button>
-            <div className="w-7 h-7 rounded-lg bg-[#171b26] border border-emerald-500/30 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[#4edea3] text-[18px]">
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-[#171b26] border border-emerald-500/20 dark:border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-[#4edea3]">
+              <span className="material-symbols-outlined text-[18px]">
                 credit_card
               </span>
             </div>
-            <h1 className="text-base font-bold text-[#dfe2f1]">
-              {step === 'bank' ? 'Select Bank & Card' : 'Type Card Details'}
+            <h1 className="text-base font-bold text-slate-900 dark:text-[#dfe2f1]">
+              {editCard
+                ? 'Edit Card Details'
+                : step === 'bank'
+                ? 'Select Bank & Card'
+                : 'Type Card Details'}
             </h1>
           </div>
 
           <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono text-[#bbcabf]">
-              {step === 'bank' ? 'Step 1 of 2' : 'Step 2 of 2'}
+            <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-white/5 border border-slate-200 dark:border-white/10 text-[10px] font-mono text-slate-600 dark:text-[#bbcabf]">
+              {editCard ? 'Edit Mode' : step === 'bank' ? 'Step 1 of 2' : 'Step 2 of 2'}
             </span>
           </div>
         </div>
@@ -186,21 +226,21 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
           /* STEP 1: Select Bank & Debit/Credit */
           <div className="space-y-4 animate-in fade-in zoom-in-95 duration-200">
             <div>
-              <h2 className="text-xl font-bold text-[#dfe2f1]">Choose Institution</h2>
-              <p className="text-xs text-[#bbcabf] mt-0.5">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-[#dfe2f1]">Choose Institution</h2>
+              <p className="text-xs text-slate-500 dark:text-[#bbcabf] mt-0.5">
                 Select your bank and account type to configure your card design.
               </p>
             </div>
 
             {/* Debit vs Credit Segmented Toggle */}
-            <div className="p-1 rounded-xl bg-[#171b26] border border-white/[0.06] grid grid-cols-2 gap-1.5">
+            <div className="p-1 rounded-xl bg-slate-100 dark:bg-[#171b26] border border-slate-200/80 dark:border-white/[0.06] grid grid-cols-2 gap-1.5">
               <button
                 type="button"
                 onClick={() => setCardType('credit')}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   cardType === 'credit'
-                    ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                    : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+                    ? 'bg-emerald-600 text-white dark:bg-[#10b981] dark:text-[#002113] shadow-md font-bold'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-[#dfe2f1]'
                 }`}
               >
                 <span className="material-symbols-outlined text-[17px]">credit_score</span>
@@ -210,10 +250,10 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
               <button
                 type="button"
                 onClick={() => setCardType('debit')}
-                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
+                className={`py-2 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   cardType === 'debit'
-                    ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                    : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+                    ? 'bg-emerald-600 text-white dark:bg-[#10b981] dark:text-[#002113] shadow-md font-bold'
+                    : 'text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-[#dfe2f1]'
                 }`}
               >
                 <span className="material-symbols-outlined text-[17px]">account_balance_wallet</span>
@@ -223,7 +263,7 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
 
             {/* Available Bank Grid */}
             <div className="space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-[#bbcabf] block">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-[#bbcabf] block">
                 Available Banks
               </span>
               <div className="grid grid-cols-2 gap-2.5">
@@ -283,17 +323,17 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
           <div className="space-y-4 animate-in fade-in slide-in-from-right duration-200">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-[#dfe2f1]">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-[#dfe2f1]">
                   Type Details on Card
                 </h2>
-                <p className="text-xs text-[#bbcabf] mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-[#bbcabf] mt-0.5">
                   Click on the card fields below to enter your card digits and name.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setStep('bank')}
-                className="text-xs font-semibold text-[#4edea3] hover:underline"
+                className="text-xs font-semibold text-emerald-600 dark:text-[#4edea3] hover:underline cursor-pointer"
               >
                 Change Bank
               </button>
@@ -408,19 +448,19 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
             </div>
 
             {/* Statement cycle day selector */}
-            <div className="p-3 rounded-xl bg-[#1c1f2a] border border-white/[0.06] flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1c1f2a] border border-slate-200 dark:border-white/[0.06] flex items-center justify-between">
               <div>
-                <span className="text-xs font-semibold text-[#dfe2f1] block">
+                <span className="text-xs font-semibold text-slate-900 dark:text-[#dfe2f1] block">
                   Statement Generation Day
                 </span>
-                <span className="text-[10px] text-[#bbcabf]">
+                <span className="text-[10px] text-slate-500 dark:text-[#bbcabf]">
                   Auto-syncs statement cycle and grace period radar
                 </span>
               </div>
               <select
                 value={statementDay}
                 onChange={(e) => setStatementDay(e.target.value)}
-                className="bg-[#171b26] border border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-[#dfe2f1] focus:outline-none"
+                className="bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-900 dark:text-[#dfe2f1] focus:outline-none"
               >
                 {[1, 5, 10, 15, 20, 25, 28].map((day) => (
                   <option key={day} value={day}>
@@ -452,8 +492,10 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
                   </>
                 ) : (
                   <>
-                    <span className="material-symbols-outlined text-[18px]">lock</span>
-                    <span>Save {selectedBank.name} to Vault</span>
+                    <span className="material-symbols-outlined text-[18px]">
+                      {editCard ? 'check_circle' : 'lock'}
+                    </span>
+                    <span>{editCard ? 'Save Changes' : `Save ${selectedBank.name} to Vault`}</span>
                   </>
                 )}
               </button>

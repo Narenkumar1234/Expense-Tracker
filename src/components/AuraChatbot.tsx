@@ -41,22 +41,13 @@ const QUICK_PROMPTS = [
   'What is my safe spending limit?',
 ];
 
-const AURA_LOADING_PHRASES = [
-  'Thinking...',
-  'Processing natural language request...',
-  'Deciphering transaction parameters...',
-  'Parsing merchant & currency entities...',
-  'Evaluating monthly budget cadence...',
-  'Allocating ledger categories...',
-  'Resolving personal vault surplus...',
-  'Cross-referencing historical records...',
-  'Synthesizing execution payload...',
-  'Validating ledger integrity...',
-  'Formulating response...',
+const AURA_LOADING_WORDS = [
+  'Loading...',
 ];
 
 interface ParsedDoneTask {
   actionLabel: string;
+  badgeClass: string;
   title: string;
   amount?: string;
   isPositive?: boolean;
@@ -73,11 +64,12 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (inflowMatch) {
     return {
       actionLabel: 'Inflow',
+      badgeClass: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-[#4edea3] border border-emerald-200/80 dark:border-emerald-500/20',
       title: inflowMatch[1].trim(),
       amount: inflowMatch[2].trim(),
       isPositive: true,
       icon: 'south_west',
-      iconColor: 'text-emerald-500 dark:text-[#4edea3]',
+      iconColor: 'text-emerald-600 dark:text-[#4edea3]',
       success: exec.success,
     };
   }
@@ -87,11 +79,12 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (expenseMatch) {
     return {
       actionLabel: 'Expense',
+      badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border border-rose-200/80 dark:border-rose-500/20',
       title: expenseMatch[1].trim(),
       amount: expenseMatch[2].trim(),
       isPositive: false,
       icon: 'north_east',
-      iconColor: 'text-slate-500 dark:text-[#bbcabf]',
+      iconColor: 'text-rose-500 dark:text-rose-400',
       success: exec.success,
     };
   }
@@ -101,6 +94,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (billMatch) {
     return {
       actionLabel: 'Bill',
+      badgeClass: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border border-amber-200/80 dark:border-amber-500/20',
       title: billMatch[1].trim(),
       amount: billMatch[2].trim(),
       isPositive: false,
@@ -115,6 +109,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (deleteMatch) {
     return {
       actionLabel: 'Removed',
+      badgeClass: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border border-rose-200/80 dark:border-rose-500/20',
       title: deleteMatch[1].trim(),
       amount: deleteMatch[2].trim(),
       isPositive: false,
@@ -129,6 +124,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (cardMatch) {
     return {
       actionLabel: 'Card',
+      badgeClass: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300 border border-sky-200/80 dark:border-sky-500/20',
       title: cardMatch[1].trim(),
       amount: cardMatch[2].trim(),
       icon: 'credit_card',
@@ -142,6 +138,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (budgetMatch) {
     return {
       actionLabel: 'Budget',
+      badgeClass: 'bg-purple-50 text-purple-700 dark:bg-purple-500/10 dark:text-purple-300 border border-purple-200/80 dark:border-purple-500/20',
       title: budgetMatch[1].trim(),
       amount: budgetMatch[2].trim(),
       icon: 'track_changes',
@@ -155,6 +152,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (profileMatch) {
     return {
       actionLabel: 'Profile',
+      badgeClass: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-500/10 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-500/20',
       title: 'Profile Updated',
       amount: profileMatch[1].trim(),
       icon: 'manage_accounts',
@@ -168,6 +166,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
   if (navMatch) {
     return {
       actionLabel: 'Navigate',
+      badgeClass: 'bg-teal-50 text-teal-700 dark:bg-teal-500/10 dark:text-teal-300 border border-teal-200/80 dark:border-teal-500/20',
       title: `Switched to ${navMatch[1].trim()}`,
       icon: 'near_me',
       iconColor: 'text-teal-500 dark:text-teal-400',
@@ -177,6 +176,7 @@ function parseDoneTask(exec: { tool: string; summary: string; icon: string; succ
 
   return {
     actionLabel: exec.tool || 'Task',
+    badgeClass: 'bg-slate-100 text-slate-700 dark:bg-white/5 dark:text-[#dfe2f1] border border-slate-200/80 dark:border-white/10',
     title: summary,
     icon: exec.icon || 'arrow_right_alt',
     iconColor: exec.success ? 'text-emerald-500 dark:text-[#4edea3]' : 'text-rose-500 dark:text-rose-400',
@@ -216,29 +216,22 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Cycle through Claude Code-style rich vocabulary messages while loading
+  // Cycle through concise single-word status while loading
   useEffect(() => {
     if (!isLoading) {
       setLoadingPhraseIndex(0);
-      setElapsedSeconds(0);
       return;
     }
 
     const phraseTimer = setInterval(() => {
-      setLoadingPhraseIndex((prev) => (prev + 1) % AURA_LOADING_PHRASES.length);
-    }, 1800);
-
-    const elapsedTimer = setInterval(() => {
-      setElapsedSeconds((prev) => +(prev + 0.1).toFixed(1));
-    }, 100);
+      setLoadingPhraseIndex((prev) => (prev + 1) % AURA_LOADING_WORDS.length);
+    }, 1500);
 
     return () => {
       clearInterval(phraseTimer);
-      clearInterval(elapsedTimer);
     };
   }, [isLoading]);
 
@@ -618,7 +611,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
               {/* Flat-Themed Execution Ledger (No individual boxes, no trailing ticks) */}
               {m.toolExecutions && m.toolExecutions.length > 0 && (
-                <div className="mt-2.5 rounded-xl bg-slate-100/70 dark:bg-white/[0.03] divide-y divide-slate-200/50 dark:divide-white/[0.04] overflow-hidden text-xs select-none">
+                <div className="mt-2.5 rounded-2xl bg-white dark:bg-[#171b26] border border-slate-200/90 dark:border-white/[0.08] shadow-xs divide-y divide-slate-100 dark:divide-white/[0.05] overflow-hidden text-xs select-none">
                   {m.toolExecutions.map((exec, idx) => {
                     const task = parseDoneTask(exec);
                     const isClickable = Boolean(onSelectTransaction) && (
@@ -632,44 +625,44 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                         role={isClickable ? 'button' : undefined}
                         tabIndex={isClickable ? 0 : undefined}
                         title={isClickable ? `View details for ${task.title}` : undefined}
-                        className={`flex items-center justify-between py-2 px-3 gap-3 transition-colors ${
+                        className={`flex items-center justify-between py-2.5 px-3.5 gap-3 transition-colors ${
                           isClickable
-                            ? 'cursor-pointer hover:bg-slate-200/60 dark:hover:bg-white/[0.06] active:bg-slate-200/90 dark:active:bg-white/[0.09]'
-                            : 'hover:bg-black/[0.02] dark:hover:bg-white/[0.02]'
+                            ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.04] active:bg-slate-100/70 dark:active:bg-white/[0.08]'
+                            : 'hover:bg-slate-50/50 dark:hover:bg-white/[0.02]'
                         }`}
                       >
                         {/* Left: Minimal Flat Icon & Clean Title */}
                         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                          <span className={`material-symbols-outlined text-[15px] shrink-0 ${task.iconColor}`}>
-                            {task.icon}
-                          </span>
+                          <div className="w-6 h-6 rounded-lg bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/5 flex items-center justify-center shrink-0">
+                            <span className={`material-symbols-outlined text-[15px] ${task.iconColor}`}>
+                              {task.icon}
+                            </span>
+                          </div>
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="font-medium text-slate-800 dark:text-[#dfe2f1] truncate">
+                            <span className="font-semibold text-slate-900 dark:text-[#dfe2f1] truncate">
                               {task.title}
                             </span>
-                            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 dark:text-[#bbcabf]/50 shrink-0">
-                              • {task.actionLabel}
+                            <span className={`text-[9.5px] font-mono uppercase font-bold tracking-wider px-1.5 py-0.5 rounded-md shrink-0 ${task.badgeClass}`}>
+                              {task.actionLabel}
                             </span>
                           </div>
                         </div>
 
                         {/* Right: Crisp Monetary Value + Subtle chevron hint for clickable expense */}
-                        <div className="flex items-center gap-1.5 shrink-0">
+                        <div className="flex items-center gap-2 shrink-0">
                           {task.amount && (
                             <span
-                              className={`font-mono text-xs font-semibold shrink-0 tracking-tight ${
+                              className={`font-mono text-xs font-bold shrink-0 tracking-tight ${
                                 task.isPositive === true
                                   ? 'text-emerald-600 dark:text-[#4edea3]'
-                                  : task.isPositive === false
-                                  ? 'text-slate-700 dark:text-[#dfe2f1]'
-                                  : 'text-slate-600 dark:text-[#bbcabf]'
+                                  : 'text-slate-900 dark:text-[#dfe2f1]'
                               }`}
                             >
                               {task.amount}
                             </span>
                           )}
                           {isClickable && (
-                            <span className="material-symbols-outlined text-[14px] text-slate-400/70 dark:text-[#bbcabf]/50">
+                            <span className="material-symbols-outlined text-[15px] text-slate-400 dark:text-[#bbcabf]/50">
                               chevron_right
                             </span>
                           )}
@@ -684,7 +677,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         ))}
 
         {isLoading && (
-          <div className="flex items-start gap-3 py-1.5 animate-in fade-in duration-200">
+          <div className="flex items-start gap-3 py-1 animate-in fade-in duration-150">
             {/* Left: Avatar with pulsing Aura multi-color gradient border */}
             <div className="relative w-8 h-8 rounded-full p-[1.5px] bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] shrink-0 animate-pulse mt-0.5">
               <div className="w-full h-full rounded-full overflow-hidden bg-white dark:bg-[#171b26]">
@@ -697,48 +690,29 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
               </div>
             </div>
 
-            {/* Right: Multi-color Loading Card with Claude-Code Vocabulary Messages */}
+            {/* Right: Flat Single Word Loading (No Card) */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="text-xs font-bold bg-gradient-to-r from-[#ff3b30] via-[#34c759] to-[#007aff] bg-clip-text text-transparent">
+              <div className="flex items-center gap-2 mb-0.5">
+                <span className="text-xs font-semibold text-emerald-700 dark:text-[#4edea3]">
                   Aura
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-[#bbcabf]/50 font-mono">
-                  {elapsedSeconds.toFixed(1)}s
                 </span>
               </div>
 
-              <div className="inline-flex flex-col gap-1.5 py-2 px-3 rounded-xl bg-slate-100/70 dark:bg-white/[0.03] border border-slate-200/50 dark:border-white/5 max-w-full">
-                <div className="flex items-center gap-2.5">
-                  {/* Multi-color Aura spinner ring */}
-                  <div className="relative w-4 h-4 shrink-0">
-                    <div className="w-4 h-4 rounded-full p-[1.5px] bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] animate-spin">
-                      <div className="w-full h-full rounded-full bg-slate-100 dark:bg-[#171b26]" />
-                    </div>
-                  </div>
-
-                  {/* Dynamic Claude Code-Style Rich Vocabulary Message */}
-                  <span
-                    key={loadingPhraseIndex}
-                    className="text-xs font-mono text-slate-700 dark:text-[#dfe2f1] tracking-tight animate-in fade-in slide-in-from-bottom-1 duration-200 truncate"
-                  >
-                    {AURA_LOADING_PHRASES[loadingPhraseIndex]}
-                  </span>
-
-                  {/* Multi-color Wave Dots (Aura palette: Red, Amber, Green, Blue, Purple) */}
-                  <div className="flex items-center gap-1 shrink-0 ml-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff3b30] animate-bounce [animation-delay:-0.32s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#ff9500] animate-bounce [animation-delay:-0.16s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#34c759] animate-bounce" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#007aff] animate-bounce [animation-delay:0.16s]" />
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#af52de] animate-bounce [animation-delay:0.32s]" />
+              <div className="flex items-center gap-2 py-0.5">
+                {/* Multi-color Aura spinning ring */}
+                <div className="relative w-3.5 h-3.5 shrink-0">
+                  <div className="w-3.5 h-3.5 rounded-full p-[1.5px] bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#34c759] via-[#007aff] to-[#af52de] animate-spin">
+                    <div className="w-full h-full rounded-full bg-white dark:bg-[#171b26]" />
                   </div>
                 </div>
 
-                {/* Multi-color Aura Gradient Shimmer Progress Line */}
-                <div className="w-full h-[2px] rounded-full overflow-hidden bg-slate-200/60 dark:bg-white/5 relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] animate-pulse opacity-90" />
-                </div>
+                {/* Single word in Aura multi-color gradient */}
+                <span
+                  key={loadingPhraseIndex}
+                  className="text-xs font-medium bg-gradient-to-r from-[#ff3b30] via-[#af52de] to-[#007aff] bg-clip-text text-transparent select-none animate-pulse"
+                >
+                  {AURA_LOADING_WORDS[loadingPhraseIndex]}
+                </span>
               </div>
             </div>
           </div>

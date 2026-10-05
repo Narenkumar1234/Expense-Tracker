@@ -190,15 +190,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       }}
     >
       {/* Period Segmented Switcher (Day, Week, Month, Year) */}
-      <div className="bg-[#171b26] p-1 rounded-full flex items-center justify-between border border-white/[0.04]">
+      <div className="bg-slate-100 dark:bg-[#171b26] p-1 rounded-full flex items-center justify-between border border-slate-200/80 dark:border-white/[0.04]">
         {(['Day', 'Week', 'Month', 'Year'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => handlePeriodChange(tab)}
             className={`flex-1 py-1.5 rounded-full text-xs font-semibold text-center transition-all cursor-pointer ${
               period === tab
-                ? 'bg-[#10b981] text-[#002113] shadow-md font-bold'
-                : 'text-[#bbcabf] hover:text-[#dfe2f1]'
+                ? 'bg-emerald-600 text-white dark:bg-[#10b981] dark:text-[#002113] shadow-md font-bold'
+                : 'text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-[#dfe2f1]'
             }`}
           >
             {tab}
@@ -210,25 +210,25 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       <div className="flex items-center justify-between px-2">
         <button
           onClick={() => setPeriodOffset((prev) => prev + 1)}
-          className="w-8 h-8 rounded-full bg-[#1c1f2a] hover:bg-[#262a35] text-[#dfe2f1] flex items-center justify-center transition-colors cursor-pointer"
+          className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-[#1c1f2a] dark:hover:bg-[#262a35] text-slate-700 dark:text-[#dfe2f1] flex items-center justify-center transition-colors cursor-pointer"
           aria-label={`Previous ${period}`}
           title={`Previous ${period}`}
         >
           <span className="material-symbols-outlined text-[18px]">chevron_left</span>
         </button>
 
-        <div className="flex items-center gap-1.5 text-sm font-semibold text-[#dfe2f1]">
-          <span className="material-symbols-outlined text-[16px] text-[#4edea3]">{getPeriodIcon()}</span>
+        <div className="flex items-center gap-1.5 text-sm font-semibold text-slate-900 dark:text-[#dfe2f1]">
+          <span className="material-symbols-outlined text-[16px] text-emerald-600 dark:text-[#4edea3]">{getPeriodIcon()}</span>
           <span>{getPeriodLabel()}</span>
         </div>
 
         <button
           onClick={() => setPeriodOffset((prev) => Math.max(0, prev - 1))}
           disabled={periodOffset <= 0}
-          className={`w-8 h-8 rounded-full bg-[#1c1f2a] flex items-center justify-center transition-colors ${
+          className={`w-8 h-8 rounded-full bg-slate-100 dark:bg-[#1c1f2a] flex items-center justify-center transition-colors ${
             periodOffset <= 0
-              ? 'opacity-25 cursor-not-allowed text-[#bbcabf]'
-              : 'hover:bg-[#262a35] text-[#dfe2f1] cursor-pointer'
+              ? 'opacity-25 cursor-not-allowed text-slate-400 dark:text-[#bbcabf]'
+              : 'hover:bg-slate-200 dark:hover:bg-[#262a35] text-slate-700 dark:text-[#dfe2f1] cursor-pointer'
           }`}
           aria-label={`Next ${period}`}
           title={periodOffset <= 0 ? 'Cannot move to future' : `Next ${period}`}
@@ -330,15 +330,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
               {/* Inner Center Label */}
               <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-4">
-                <span className="text-[11px] text-[#bbcabf] uppercase font-bold tracking-wider">
+                <span className="text-[11px] text-slate-500 dark:text-[#bbcabf] uppercase font-bold tracking-wider">
                   {hoveredCategory ? hoveredCategory.split(' ')[0] : 'TOTAL'}
                 </span>
-                <span className="font-mono text-xl sm:text-2xl font-bold text-[#dfe2f1] mt-0.5">
+                <span className="font-mono text-xl sm:text-2xl font-bold text-slate-900 dark:text-[#dfe2f1] mt-0.5">
                   {hoveredCategory
                     ? `₹${categories.find((c) => c.name === hoveredCategory)?.amount.toLocaleString('en-IN')}`
                     : `₹${totalSpent.toLocaleString('en-IN')}`}
                 </span>
-                <span className="text-[10px] text-[#4edea3] font-semibold mt-0.5">
+                <span className="text-[10px] text-emerald-700 dark:text-[#4edea3] font-semibold mt-0.5">
                   {hoveredCategory
                     ? `${categories.find((c) => c.name === hoveredCategory)?.percent}% of spend`
                     : `${categories.length} Categories`}
@@ -357,8 +357,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                   onClick={() => setHoveredCategory(hoveredCategory === c.name ? null : c.name)}
                   className={`flex items-center gap-1.5 py-1 px-2.5 rounded-full text-xs transition-all cursor-pointer ${
                     hoveredCategory === c.name
-                      ? 'bg-white/15 text-white ring-1 ring-white/30 scale-105'
-                      : 'bg-[#171b26] text-[#bbcabf] hover:text-[#dfe2f1] border border-white/[0.04]'
+                      ? 'bg-slate-900 text-white dark:bg-white/20 dark:text-white ring-1 ring-slate-900/20 dark:ring-white/30 scale-105 shadow-sm'
+                      : 'bg-slate-100 dark:bg-[#171b26] text-slate-700 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-[#dfe2f1] border border-slate-200 dark:border-white/[0.04]'
                   }`}
                 >
                   <div className="w-2 h-2 rounded-full" style={{ backgroundColor: c.color }} />
@@ -370,27 +370,27 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           </div>
 
           {/* Detailed Category Rows */}
-          <div className="space-y-2 pt-2 border-t border-white/[0.04]">
+          <div className="space-y-2 pt-2 border-t border-slate-200/80 dark:border-white/[0.04]">
             {categories.map((c) => (
               <div
                 key={c.name}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-[#171b26] border border-white/[0.04] hover:border-white/10 transition-colors"
+                className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 dark:bg-[#171b26] border border-slate-200/80 dark:border-white/[0.04] hover:border-slate-300 dark:hover:border-white/10 transition-colors"
               >
                 <div className="flex items-center gap-2.5">
                   <div
-                    className="w-8 h-8 rounded-lg bg-[#262a35] flex items-center justify-center"
+                    className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-[#262a35] flex items-center justify-center"
                     style={{ color: c.color }}
                   >
                     <span className="material-symbols-outlined text-[18px]">{c.icon}</span>
                   </div>
                   <div>
-                    <div className="text-xs font-semibold text-[#dfe2f1]">{c.name}</div>
-                    <div className="text-[10px] text-[#bbcabf] font-mono">{c.percent}% of total spend</div>
+                    <div className="text-xs font-semibold text-slate-900 dark:text-[#dfe2f1]">{c.name}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-[#bbcabf] font-mono">{c.percent}% of total spend</div>
                   </div>
                 </div>
 
                 <div className="text-right">
-                  <div className="font-mono text-xs font-bold text-[#dfe2f1]">
+                  <div className="font-mono text-xs font-bold text-slate-900 dark:text-[#dfe2f1]">
                     ₹{c.amount.toLocaleString('en-IN')}
                   </div>
                 </div>

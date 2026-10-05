@@ -45,7 +45,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <header
-      className="sticky top-0 w-full z-40 bg-[#0f131d]/90 backdrop-blur-xl border-b border-white/[0.04] shadow-[0_1px_12px_rgba(0,0,0,0.4)] transition-[padding] duration-150"
+      className="sticky top-0 w-full z-40 bg-white/95 dark:bg-[#0f131d]/90 backdrop-blur-xl border-b border-slate-200/80 dark:border-white/[0.04] shadow-xs dark:shadow-[0_1px_12px_rgba(0,0,0,0.4)] transition-[padding] duration-150"
       style={{
         paddingTop: 'env(safe-area-inset-top, 0px)',
       }}
@@ -61,7 +61,7 @@ export const Header: React.FC<HeaderProps> = ({
             <AuraLogo size={28} iconSize={13} />
           </button>
 
-          <span className="text-[17px] font-bold text-[#dfe2f1] tracking-tight leading-none select-none">
+          <span className="text-[17px] font-bold text-slate-900 dark:text-[#dfe2f1] tracking-tight leading-none select-none">
             {getScreenTitle()}
           </span>
         </div>
@@ -71,7 +71,7 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenNotifications}
             aria-label="Notifications"
-            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-[#bbcabf] hover:text-[#dfe2f1] hover:bg-white/5 transition-colors relative cursor-pointer"
+            className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full text-slate-600 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-[#dfe2f1] hover:bg-slate-100 dark:hover:bg-white/5 transition-colors relative cursor-pointer"
           >
             <span className="material-symbols-outlined text-[20px] sm:text-[22px]">
               notifications
@@ -89,10 +89,10 @@ export const Header: React.FC<HeaderProps> = ({
             <img
               src={user.avatarUrl}
               alt={user.name}
-              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm ring-1 ring-white/10"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm ring-1 ring-slate-200 dark:ring-white/10"
               referrerPolicy="no-referrer"
             />
-            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-[#0f131d] ${firebaseUser ? 'bg-[#10b981]' : 'bg-slate-400'}`} />
+            <span className={`absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full border-2 border-white dark:border-[#0f131d] ${firebaseUser ? 'bg-[#10b981]' : 'bg-slate-400'}`} />
           </button>
         </div>
       </div>

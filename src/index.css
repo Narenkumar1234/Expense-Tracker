@@ -186,6 +186,22 @@ html:not(.dark) .text-slate-300 {
   color: #334155 !important;
 }
 
+html.light .text-slate-400,
+html:not(.dark) .text-slate-400 {
+  color: #475569 !important;
+}
+
+/* Prevent white text on hover in light mode */
+html.light .hover\:text-white:hover,
+html:not(.dark) .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+html.light .group:hover .group-hover\:text-white,
+html:not(.dark) .group:hover .group-hover\:text-white {
+  color: #0f172a !important;
+}
+
 /* Semantic Emerald (Inflow / Positive) */
 html.light .text-\[\#4edea3\],
 html:not(.dark) .text-\[\#4edea3\] {

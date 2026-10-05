@@ -211,11 +211,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
       <div className="absolute -bottom-10 -left-10 w-36 h-36 bg-[#6366f1]/10 rounded-full blur-3xl pointer-events-none" />
 
       <div className="relative z-10 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-[#bbcabf] uppercase">
+        <div className="flex items-center gap-2 text-xs font-semibold tracking-wider text-slate-500 dark:text-[#bbcabf] uppercase">
           <span>TOTAL NET BALANCE</span>
           <button
             onClick={() => setIsBalanceHidden(!isBalanceHidden)}
-            className="text-[#bbcabf] hover:text-white transition-colors"
+            className="text-slate-500 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer"
             aria-label="Toggle balance visibility"
           >
             <span className="material-symbols-outlined text-[17px]">
@@ -550,13 +550,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                             />
                             <div
                               onClick={(e) => e.stopPropagation()}
-                              className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-[#171b26] border border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
+                              className="absolute left-0 bottom-full mb-2 z-50 p-2.5 rounded-xl bg-white dark:bg-[#171b26] border border-slate-200 dark:border-white/10 shadow-2xl text-xs whitespace-nowrap animate-in fade-in zoom-in-95 duration-150"
                             >
-                              <div className="flex items-center gap-1.5 font-bold text-[#4edea3] mb-0.5">
+                              <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-[#4edea3] mb-0.5">
                                 <span className="material-symbols-outlined text-[14px]">sync</span>
                                 <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month Plan` : 'Recurring Auto-debit'}</span>
                               </div>
-                              <div className="text-[11px] text-[#bbcabf] font-mono">
+                              <div className="text-[11px] text-slate-600 dark:text-[#bbcabf] font-mono">
                                 {tx.monthlyEquivalent ? `₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`}
                               </div>
                             </div>
@@ -565,8 +565,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5 text-[11px] text-[#bbcabf] mt-0.5">
-                    <span className="px-1.5 py-0.2 rounded bg-white/5 text-[9px] font-bold tracking-wider text-slate-300 uppercase">
+                  <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#bbcabf] mt-0.5">
+                    <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/5 text-[9px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
                       {tx.category}
                     </span>
                     <span>•</span>
@@ -595,7 +595,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
                       e.stopPropagation();
                       setLongPressTxId(null);
                     }}
-                    className="w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-xs text-[#bbcabf]"
+                    className="w-6 h-6 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 flex items-center justify-center text-xs text-slate-700 dark:text-[#bbcabf] cursor-pointer"
                     title="Done"
                   >
                     ✕

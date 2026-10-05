@@ -7,6 +7,8 @@ interface ProfileScreenProps {
   user: UserProfile;
   cards: PaymentCard[];
   onOpenAddCard: () => void;
+  onEditCard?: (card: PaymentCard) => void;
+  onDeleteCard?: (cardId: string) => void;
   onUpdateUser: (updated: Partial<UserProfile>) => void;
   onBack: () => void;
   firebaseUser?: FirebaseUser | null;
@@ -19,6 +21,8 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   user,
   cards,
   onOpenAddCard,
+  onEditCard,
+  onDeleteCard,
   onUpdateUser,
   onBack,
   firebaseUser,
@@ -390,35 +394,65 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </div>
                   </div>
 
-                  <span className={`px-2 py-0.5 rounded-full ${badgeStyle} text-[10px] font-bold uppercase`}>
-                    {card.type}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full ${badgeStyle} text-[10px] font-bold uppercase`}>
+                      {card.type}
+                    </span>
+                    {onEditCard && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onEditCard(card);
+                        }}
+                        className="w-7 h-7 rounded-lg bg-black/30 hover:bg-black/50 text-white/80 hover:text-emerald-300 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Edit Card"
+                        aria-label="Edit Card"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                    )}
+                    {onDeleteCard && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteCard(card.id);
+                        }}
+                        className="w-7 h-7 rounded-lg bg-black/30 hover:bg-black/50 text-white/80 hover:text-rose-300 flex items-center justify-center transition-colors cursor-pointer"
+                        title="Delete Card"
+                        aria-label="Delete Card"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete_outline</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {isCredit ? (
                   <>
                     <div className="flex items-center justify-between text-xs pt-1">
                       <div>
-                        <span className="text-[10px] text-[#bbcabf] block">Unbilled Spend</span>
-                        <span className="font-mono font-bold text-[#dfe2f1]">
+                        <span className="text-[10px] text-white/75 block">Unbilled Spend</span>
+                        <span className="font-mono font-bold text-white">
                           ₹{(card.unbilledSpend || 0).toLocaleString('en-IN')}
-                          <span className="text-[10px] text-[#bbcabf] font-normal">
+                          <span className="text-[10px] text-white/70 font-normal">
                             {' '}
                             / ₹{(card.creditLimit || 250000).toLocaleString('en-IN')}
                           </span>
                         </span>
                       </div>
                       <div className="text-right">
-                        <span className="text-[10px] text-[#bbcabf] block">Statement Due</span>
-                        <span className="font-semibold text-[#ff7886] text-xs">
+                        <span className="text-[10px] text-white/75 block">Statement Due</span>
+                        <span className="font-semibold text-rose-300 text-xs">
                           {card.dueDate || '7th Nov (In 14 days)'}
                         </span>
                       </div>
                     </div>
 
-                    <div className="w-full h-1.5 rounded-full bg-[#0f131d] overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
                       <div
-                        className="h-full bg-[#4edea3] rounded-full"
+                        className="h-full bg-emerald-400 rounded-full"
                         style={{
                           width: `${Math.min(
                             ((card.unbilledSpend || 0) / (card.creditLimit || 250000)) * 100,
@@ -428,9 +462,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-[#bbcabf]">
+                    <div className="flex items-center justify-between text-[11px] text-white/75">
                       <span>Bill Generated: 18th Oct</span>
-                      <span className="text-[#4edea3] flex items-center gap-1 font-semibold">
+                      <span className="text-emerald-300 flex items-center gap-1 font-semibold">
                         <span className="material-symbols-outlined text-[13px]">check_circle</span>
                         Cycle Active
                       </span>
@@ -439,14 +473,14 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 ) : (
                   <div className="flex items-center justify-between text-xs pt-1">
                     <div>
-                      <span className="text-[10px] text-[#bbcabf] block">Available Balance</span>
-                      <span className="font-mono font-bold text-base text-[#4edea3]">
+                      <span className="text-[10px] text-white/75 block">Available Balance</span>
+                      <span className="font-mono font-bold text-base text-emerald-300">
                         ₹{(card.availableBalance || 142850).toLocaleString('en-IN')}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-[#bbcabf] block">Auto-Sweep</span>
-                      <span className="text-[#4edea3] font-semibold text-xs flex items-center gap-1">
+                      <span className="text-[10px] text-white/75 block">Auto-Sweep</span>
+                      <span className="text-emerald-300 font-semibold text-xs flex items-center gap-1">
                         <span className="material-symbols-outlined text-[13px]">lock_clock</span>
                         Enabled
                       </span>
