@@ -385,10 +385,10 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
                     >
                       <div className="flex items-center gap-1.5 font-bold text-emerald-600 dark:text-[#4edea3] mb-0.5">
                         <span className="material-symbols-outlined text-[14px]">sync</span>
-                        <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month Plan` : 'Recurring Auto-debit'}</span>
+                        <span>{tx.recurringDurationMonths ? `${tx.recurringDurationMonths}-Month ${tx.amount > 0 ? 'Salary / Income' : 'Plan'}` : (tx.amount > 0 ? 'Recurring Auto-credit' : 'Recurring Auto-debit')}</span>
                       </div>
                       <div className="text-[11px] text-slate-600 dark:text-[#bbcabf] font-mono">
-                        {tx.monthlyEquivalent ? `₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`}
+                        {tx.monthlyEquivalent ? `${tx.amount > 0 ? '+' : ''}₹${tx.monthlyEquivalent.toLocaleString('en-IN')}/mo` : (tx.amount > 0 ? `+₹${tx.amount.toLocaleString('en-IN')} auto-credit` : `₹${Math.abs(tx.amount).toLocaleString('en-IN')} auto-debit`)}
                       </div>
                     </div>
                   </>

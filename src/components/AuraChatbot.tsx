@@ -276,9 +276,9 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         if (name === 'addTransaction') {
           const rawAmount = Number(args.amount) || 0;
           const isRecurring = Boolean(args.isRecurring);
-          const merchant = args.merchant || (isRecurring ? 'Recurring Bill' : 'Expense');
-          const category = args.category || (isRecurring ? 'Utilities' : 'General');
-          const categoryType = args.categoryType || (isRecurring ? 'BILLS' : 'OTHER');
+          const merchant = args.merchant || (isRecurring ? (rawAmount > 0 ? 'Recurring Salary' : 'Recurring Bill') : (rawAmount > 0 ? 'Income Deposit' : 'Expense'));
+          const category = args.category || (isRecurring ? (rawAmount > 0 ? 'Salary' : 'Utilities') : (rawAmount > 0 ? 'Salary' : 'General'));
+          const categoryType = args.categoryType || (isRecurring ? (rawAmount > 0 ? 'SALARY' : 'BILLS') : (rawAmount > 0 ? 'SALARY' : 'OTHER'));
 
           const txId = `tx-${Date.now()}-${transactionsToAdd.length}-${Math.random().toString(36).substring(2, 7)}`;
           const txData: Transaction = {
@@ -292,10 +292,10 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             account: cards[0] ? `${cards[0].bankName} •• ${cards[0].last4}` : 'Primary Ledger',
             status: 'completed',
-            icon: isRecurring ? 'bolt' : rawAmount > 0 ? 'arrow_downward' : 'shopping_bag',
+            icon: isRecurring ? (rawAmount > 0 ? 'payments' : 'bolt') : rawAmount > 0 ? 'payments' : 'shopping_bag',
             isRecurring,
             recurringFrequency: args.recurringFrequency || (isRecurring ? 'Monthly' : undefined),
-            notes: args.notes || (isRecurring ? 'Recurring bill added by Copilot' : 'Logged via Copilot'),
+            notes: args.notes || (isRecurring ? (rawAmount > 0 ? 'Recurring salary added by Copilot' : 'Recurring bill added by Copilot') : 'Logged via Copilot'),
           };
 
           transactionsToAdd.push(txData);
@@ -304,11 +304,11 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             tool: 'addTransaction',
             transactionId: txId,
             summary: isRecurring
-              ? `Scheduled Bill: ${merchant} (₹${Math.abs(rawAmount).toLocaleString('en-IN')})`
+              ? (rawAmount > 0 ? `Scheduled Recurring Income: ${merchant} (+₹${rawAmount.toLocaleString('en-IN')})` : `Scheduled Bill: ${merchant} (₹${Math.abs(rawAmount).toLocaleString('en-IN')})`)
               : rawAmount > 0
               ? `Recorded Inflow: ${merchant} (+₹${rawAmount.toLocaleString('en-IN')})`
               : `Logged Expense: ${merchant} (-₹${Math.abs(rawAmount).toLocaleString('en-IN')})`,
-            icon: isRecurring ? 'bolt' : rawAmount > 0 ? 'payments' : 'receipt_long',
+            icon: isRecurring ? (rawAmount > 0 ? 'payments' : 'bolt') : rawAmount > 0 ? 'payments' : 'receipt_long',
             success: true,
           });
         } else if (name === 'deleteTransaction') {

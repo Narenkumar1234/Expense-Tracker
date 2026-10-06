@@ -51,7 +51,7 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
   const [cardVariant, setCardVariant] = useState('Salary Debit Card');
   const [last4, setLast4] = useState('4829');
   const [cardType, setCardType] = useState<'credit' | 'debit'>('debit');
-  const [initialBalance, setInitialBalance] = useState('50000');
+  const [cardCreditLimit, setCardCreditLimit] = useState('');
 
   // Sync state if firebaseUser changes
   useEffect(() => {
@@ -153,7 +153,8 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         expiry: '12/29',
         network: 'VISA',
         type: cardType,
-        availableBalance: parseInt(initialBalance.replace(/\D/g, ''), 10) || 0,
+        creditLimit: cardType === 'credit' && cardCreditLimit ? parseInt(cardCreditLimit.replace(/\D/g, ''), 10) : undefined,
+        unbilledSpend: 0,
         isDefault: true,
       };
     }
@@ -777,20 +778,25 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-[11px] font-semibold text-slate-500 dark:text-[#bbcabf]">Current Available Balance</label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-[#4edea3]">₹</span>
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      value={parseInt(initialBalance.replace(/\D/g, ''), 10) ? parseInt(initialBalance.replace(/\D/g, ''), 10).toLocaleString('en-IN') : ''}
-                      onChange={(e) => setInitialBalance(e.target.value.replace(/\D/g, ''))}
-                      placeholder="50,000"
-                      className="w-full h-10 bg-slate-50 dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-xl pl-8 pr-3 text-xs font-mono font-bold text-slate-800 dark:text-[#dfe2f1] focus:outline-none"
-                    />
+                {cardType === 'credit' && (
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-semibold text-slate-500 dark:text-[#bbcabf] flex items-center justify-between">
+                      <span>Credit Limit</span>
+                      <span className="text-[10px] text-slate-400 font-normal">Optional</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-2.5 text-xs font-mono font-bold text-emerald-600 dark:text-[#4edea3]">₹</span>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        value={parseInt(cardCreditLimit.replace(/\D/g, ''), 10) ? parseInt(cardCreditLimit.replace(/\D/g, ''), 10).toLocaleString('en-IN') : ''}
+                        onChange={(e) => setCardCreditLimit(e.target.value.replace(/\D/g, ''))}
+                        placeholder="e.g. 1,00,000"
+                        className="w-full h-10 bg-slate-50 dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-xl pl-8 pr-3 text-xs font-mono font-bold text-slate-800 dark:text-[#dfe2f1] focus:outline-none"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

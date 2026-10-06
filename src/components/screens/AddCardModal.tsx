@@ -110,7 +110,7 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
   const [creditLimit, setCreditLimit] = useState(
     editCard?.creditLimit
       ? editCard.creditLimit.toLocaleString('en-IN')
-      : '2,50,000'
+      : ''
   );
   const [statementDay, setStatementDay] = useState('15');
 
@@ -126,6 +126,16 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
 
   const handleBankSelect = (bank: BankOption) => {
     setSelectedBank(bank);
+  };
+
+  const handleCreditLimitChange = (val: string) => {
+    const raw = val.replace(/\D/g, '');
+    if (!raw) {
+      setCreditLimit('');
+    } else {
+      const num = parseInt(raw, 10);
+      setCreditLimit(num.toLocaleString('en-IN'));
+    }
   };
 
   const handleExpiryChange = (val: string) => {
@@ -144,6 +154,8 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
       setSuccess(true);
 
       const formattedLast4 = last4.trim() || '4829';
+      const cleanLimit = creditLimit.replace(/\D/g, '');
+      const parsedLimit = cardType === 'credit' && cleanLimit ? parseInt(cleanLimit, 10) : undefined;
 
       if (editCard && onUpdateCard) {
         const updated: PaymentCard = {
@@ -156,7 +168,7 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
           expiry: expiry || '08/29',
           network: getNetwork() as any,
           type: cardType,
-          creditLimit: parseInt(creditLimit.replace(/,/g, '')) || 250000,
+          creditLimit: parsedLimit,
         };
         onUpdateCard(updated);
       } else {
@@ -170,7 +182,7 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
           expiry: expiry || '08/29',
           network: getNetwork() as any,
           type: cardType,
-          creditLimit: parseInt(creditLimit.replace(/,/g, '')) || 250000,
+          creditLimit: parsedLimit,
           unbilledSpend: 0,
           statementDate: `${statementDay}th of every month`,
           dueDate: '5th of following month',
@@ -403,10 +415,11 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
                     <span className="text-[10px] text-white/70">Credit Limit: ₹</span>
                     <input
                       type="text"
+                      inputMode="numeric"
                       value={creditLimit}
-                      onChange={(e) => setCreditLimit(e.target.value)}
-                      placeholder="2,50,000"
-                      className="w-24 bg-transparent border-b border-white/30 focus:border-[#4edea3] text-xs font-mono font-bold text-[#4edea3] focus:outline-none"
+                      onChange={(e) => handleCreditLimitChange(e.target.value)}
+                      placeholder="Optional"
+                      className="w-24 bg-transparent border-b border-white/30 focus:border-[#4edea3] text-xs font-mono font-bold text-[#4edea3] focus:outline-none placeholder:text-white/40"
                     />
                   </div>
                 )}
@@ -446,6 +459,35 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Credit Limit Input (Optional for Credit Card) */}
+            {cardType === 'credit' && (
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#1c1f2a] border border-slate-200 dark:border-white/[0.06] space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-slate-900 dark:text-[#dfe2f1] flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-emerald-600 dark:text-[#4edea3]">credit_score</span>
+                    <span>Credit Limit</span>
+                  </label>
+                  <span className="text-[10px] text-slate-500 dark:text-[#bbcabf] font-medium bg-slate-200/60 dark:bg-white/5 px-2 py-0.5 rounded-full">
+                    Optional
+                  </span>
+                </div>
+                <div className="relative">
+                  <span className="absolute left-3 top-2 text-xs font-mono font-bold text-emerald-600 dark:text-[#4edea3]">₹</span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={creditLimit}
+                    onChange={(e) => handleCreditLimitChange(e.target.value)}
+                    placeholder="e.g. 1,50,000"
+                    className="w-full bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-lg pl-7 pr-3 py-1.5 text-xs font-mono font-bold text-slate-900 dark:text-[#dfe2f1] focus:outline-none focus:border-emerald-500 dark:focus:border-[#4edea3]"
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-[#bbcabf]">
+                  Track your monthly credit utilization ratio, or leave empty if not tracking a limit.
+                </p>
+              </div>
+            )}
 
             {/* Statement cycle day selector */}
             <div className="p-3 rounded-xl bg-slate-50 dark:bg-[#1c1f2a] border border-slate-200 dark:border-white/[0.06] flex items-center justify-between">

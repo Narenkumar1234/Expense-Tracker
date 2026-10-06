@@ -436,10 +436,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         <span className="text-[10px] text-white/75 block">Unbilled Spend</span>
                         <span className="font-mono font-bold text-white">
                           ₹{(card.unbilledSpend || 0).toLocaleString('en-IN')}
-                          <span className="text-[10px] text-white/70 font-normal">
-                            {' '}
-                            / ₹{(card.creditLimit || 250000).toLocaleString('en-IN')}
-                          </span>
+                          {card.creditLimit && card.creditLimit > 0 ? (
+                            <span className="text-[10px] text-white/70 font-normal">
+                              {' '}
+                              / ₹{card.creditLimit.toLocaleString('en-IN')}
+                            </span>
+                          ) : null}
                         </span>
                       </div>
                       <div className="text-right">
@@ -450,20 +452,22 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       </div>
                     </div>
 
-                    <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
-                      <div
-                        className="h-full bg-emerald-400 rounded-full"
-                        style={{
-                          width: `${Math.min(
-                            ((card.unbilledSpend || 0) / (card.creditLimit || 250000)) * 100,
-                            100
-                          )}%`,
-                        }}
-                      />
-                    </div>
+                    {card.creditLimit && card.creditLimit > 0 ? (
+                      <div className="w-full h-1.5 rounded-full bg-black/40 overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-400 rounded-full"
+                          style={{
+                            width: `${Math.min(
+                              ((card.unbilledSpend || 0) / card.creditLimit) * 100,
+                              100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    ) : null}
 
                     <div className="flex items-center justify-between text-[11px] text-white/75">
-                      <span>Bill Generated: 18th Oct</span>
+                      <span>{card.statementDate || 'Bill Generated: 18th Oct'}</span>
                       <span className="text-emerald-300 flex items-center gap-1 font-semibold">
                         <span className="material-symbols-outlined text-[13px]">check_circle</span>
                         Cycle Active
@@ -473,16 +477,16 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 ) : (
                   <div className="flex items-center justify-between text-xs pt-1">
                     <div>
-                      <span className="text-[10px] text-white/75 block">Available Balance</span>
-                      <span className="font-mono font-bold text-base text-emerald-300">
-                        ₹{(card.availableBalance || 142850).toLocaleString('en-IN')}
+                      <span className="text-[10px] text-white/75 block">Linked Account</span>
+                      <span className="font-semibold text-xs text-white">
+                        {card.variant || 'Primary Bank Account'}
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] text-white/75 block">Auto-Sweep</span>
-                      <span className="text-emerald-300 font-semibold text-xs flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[13px]">lock_clock</span>
-                        Enabled
+                      <span className="text-[10px] text-white/75 block">Account Status</span>
+                      <span className="text-emerald-300 font-semibold text-xs flex items-center gap-1 justify-end">
+                        <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                        Active
                       </span>
                     </div>
                   </div>

@@ -150,7 +150,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     setTxType(type);
     if (type === 'income') {
       setSelectedCategory('Salary');
-      setIsRecurring(false);
     } else {
       setSelectedCategory('Food');
     }
@@ -177,7 +176,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     };
 
     setTimeout(() => {
-      const finalMerchant = merchantNote.trim() || (txType === 'income' ? 'Income Deposit' : 'New Entry');
+      const finalMerchant = merchantNote.trim() || (txType === 'income' ? (selectedCategory === 'Salary' ? 'Monthly Salary' : 'Income Deposit') : 'New Entry');
       const finalCategory = selectedCategory.toUpperCase();
       const finalCategoryType = categoryTypeMap[selectedCategory] || 'OTHER';
       const finalIcon = currentCategories.find((c) => c.id === selectedCategory)?.icon || 'receipt';
@@ -193,13 +192,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           account: finalAccount,
           icon: finalIcon,
           notes: merchantNote,
-          isRecurring: txType === 'expense' ? isRecurring : false,
-          recurringDurationMonths: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-          recurringFrequency: txType === 'expense' && isRecurring ? recurringFrequency : undefined,
-          monthlyEquivalent: txType === 'expense' && isRecurring ? monthlyEquivalent : undefined,
-          totalCommitment: txType === 'expense' && isRecurring ? totalCommitment : undefined,
-          remainingCycles: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-          cycleEndDate: txType === 'expense' && isRecurring ? cycleEndDate : undefined,
+          isRecurring: isRecurring,
+          recurringDurationMonths: isRecurring ? recurringMonths : undefined,
+          recurringFrequency: isRecurring ? recurringFrequency : undefined,
+          monthlyEquivalent: isRecurring ? Math.abs(monthlyEquivalent) : undefined,
+          totalCommitment: isRecurring ? Math.abs(totalCommitment) : undefined,
+          remainingCycles: isRecurring ? recurringMonths : undefined,
+          cycleEndDate: isRecurring ? cycleEndDate : undefined,
         });
       } else {
         onSaveTransaction({
@@ -214,13 +213,13 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           status: 'completed',
           icon: finalIcon,
           notes: merchantNote,
-          isRecurring: txType === 'expense' ? isRecurring : false,
-          recurringDurationMonths: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-          recurringFrequency: txType === 'expense' && isRecurring ? recurringFrequency : undefined,
-          monthlyEquivalent: txType === 'expense' && isRecurring ? monthlyEquivalent : undefined,
-          totalCommitment: txType === 'expense' && isRecurring ? totalCommitment : undefined,
-          remainingCycles: txType === 'expense' && isRecurring ? recurringMonths : undefined,
-          cycleEndDate: txType === 'expense' && isRecurring ? cycleEndDate : undefined,
+          isRecurring: isRecurring,
+          recurringDurationMonths: isRecurring ? recurringMonths : undefined,
+          recurringFrequency: isRecurring ? recurringFrequency : undefined,
+          monthlyEquivalent: isRecurring ? Math.abs(monthlyEquivalent) : undefined,
+          totalCommitment: isRecurring ? Math.abs(totalCommitment) : undefined,
+          remainingCycles: isRecurring ? recurringMonths : undefined,
+          cycleEndDate: isRecurring ? cycleEndDate : undefined,
         });
       }
 
@@ -470,23 +469,22 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
             </span>
           </div>
 
-          {/* Recurring Transaction Section: Shown only for expense & initially disabled */}
-          {txType === 'expense' && (
-            <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1c1f2a] border border-slate-200/80 dark:border-white/[0.04] space-y-3.5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-[#10b981]/15 text-emerald-700 dark:text-[#4edea3] flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[18px]">sync</span>
+          {/* Recurring Transaction Section: Shown for both expense and income (salary) */}
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-[#1c1f2a] border border-slate-200/80 dark:border-white/[0.04] space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-[#10b981]/15 text-emerald-700 dark:text-[#4edea3] flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[18px]">sync</span>
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-slate-900 dark:text-[#dfe2f1]">
+                    {txType === 'income' ? 'Recurring Income / Salary' : 'Recurring Transaction'}
                   </div>
-                  <div>
-                    <div className="text-xs font-semibold text-slate-900 dark:text-[#dfe2f1]">
-                      Recurring Transaction
-                    </div>
-                    <div className="text-[10px] text-slate-500 dark:text-[#bbcabf]">
-                      Repeat automatically on schedule
-                    </div>
+                  <div className="text-[10px] text-slate-500 dark:text-[#bbcabf]">
+                    {txType === 'income' ? 'Auto-credit repeat on salary schedule' : 'Repeat automatically on schedule'}
                   </div>
                 </div>
+              </div>
 
                 <div className="flex items-center gap-2">
                   {isRecurring && (
@@ -521,7 +519,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                           : 'text-slate-600 dark:text-[#bbcabf]'
                       }`}
                     >
-                      Cost Per Cycle
+                      {txType === 'income' ? 'Inflow Per Cycle' : 'Cost Per Cycle'}
                     </button>
                     <button
                       onClick={() => setRecurringEntryMode('total_contract')}
@@ -531,7 +529,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                           : 'text-slate-600 dark:text-[#bbcabf]'
                       }`}
                     >
-                      Total Contract
+                      {txType === 'income' ? 'Total Period' : 'Total Contract'}
                     </button>
                   </div>
 
@@ -539,7 +537,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-500 dark:text-[#bbcabf] uppercase font-bold">
-                        Billing Frequency
+                        {txType === 'income' ? 'Pay Frequency' : 'Billing Frequency'}
                       </label>
                       <select
                         value={recurringFrequency}
@@ -555,7 +553,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
                     <div className="space-y-1">
                       <label className="text-[10px] text-slate-500 dark:text-[#bbcabf] uppercase font-bold">
-                        Commitment Duration
+                        {txType === 'income' ? 'Schedule Horizon' : 'Commitment Duration'}
                       </label>
                       <select
                         value={recurringMonths}
@@ -566,7 +564,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                         <option value={3}>3 Months (Quarterly)</option>
                         <option value={6}>6 Months (Half-Year)</option>
                         <option value={12}>12 Months (Annual Plan)</option>
-                        <option value={24}>24 Months (2-Year Lock-in)</option>
+                        <option value={24}>24 Months (2-Year Horizon)</option>
                       </select>
                     </div>
                   </div>
@@ -577,7 +575,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                       <div className="flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-emerald-600 dark:text-[#4edea3] text-[16px]">calculate</span>
                         <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-[#4edea3]">
-                          Monthly Breakdown
+                          {txType === 'income' ? 'Income Breakdown' : 'Monthly Breakdown'}
                         </span>
                       </div>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
@@ -587,7 +585,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-2 pt-0.5">
                       <div className="p-2.5 rounded-lg bg-white dark:bg-[#1b202e] border border-slate-200/80 dark:border-white/5">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Monthly Impact</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                          {txType === 'income' ? 'Monthly Inflow' : 'Monthly Impact'}
+                        </span>
                         <div className="text-base font-bold font-mono text-emerald-600 dark:text-[#4edea3] mt-0.5">
                           {getCurrencySymbol()}{monthlyEquivalent.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">/mo</span>
@@ -595,7 +595,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                       </div>
 
                       <div className="p-2.5 rounded-lg bg-white dark:bg-[#1b202e] border border-slate-200/80 dark:border-white/5">
-                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Commitment</span>
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                          {txType === 'income' ? 'Total Inflow' : 'Total Commitment'}
+                        </span>
                         <div className="text-base font-bold font-mono text-slate-900 dark:text-white mt-0.5">
                           {getCurrencySymbol()}{totalCommitment.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </div>
@@ -606,14 +608,16 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                     <div className="flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-white/[0.04]">
                       <div className="flex items-center gap-1">
                         <span className="material-symbols-outlined text-[14px] text-indigo-600 dark:text-[#c0c1ff]">event_available</span>
-                        <span>Horizon: Through <strong className="text-slate-900 dark:text-white">{cycleEndDate}</strong></span>
+                        <span>
+                          {txType === 'income' ? 'Schedule: Through ' : 'Horizon: Through '}
+                          <strong className="text-slate-900 dark:text-white">{cycleEndDate}</strong>
+                        </span>
                       </div>
                     </div>
                   </div>
                 </div>
               )}
             </div>
-          )}
 
           {/* Save Action */}
           <div className="pt-2">

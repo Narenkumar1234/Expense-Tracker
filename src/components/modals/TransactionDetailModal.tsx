@@ -129,7 +129,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 <span className="material-symbols-outlined text-[13px]">
                   {transaction.isRecurring ? 'sync' : 'payments'}
                 </span>
-                <span>{transaction.isRecurring ? 'Recurring Schedule' : 'Normal Transaction'}</span>
+                <span>{transaction.isRecurring ? (transaction.amount > 0 ? 'Recurring Salary / Inflow' : 'Recurring Schedule') : 'Normal Transaction'}</span>
               </span>
             </div>
           </div>
@@ -141,7 +141,7 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
                 <div className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-[16px] text-emerald-600 dark:text-[#4edea3]">repeat</span>
                   <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    {transaction.recurringDurationMonths || 12}-Month Recurring Plan
+                    {transaction.recurringDurationMonths || 12}-Month {transaction.amount > 0 ? 'Income Schedule' : 'Recurring Plan'}
                   </span>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-500/20 dark:text-[#4edea3] text-[9px] font-bold">
@@ -151,16 +151,20 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
 
               <div className="grid grid-cols-2 gap-2 text-xs">
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1b202e] border border-slate-200/80 dark:border-white/5">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Monthly Impact</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                    {transaction.amount > 0 ? 'Monthly Inflow' : 'Monthly Impact'}
+                  </span>
                   <span className="font-mono font-bold text-emerald-600 dark:text-[#4edea3] text-sm">
-                    ₹{(transaction.monthlyEquivalent || Math.abs(transaction.amount)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {transaction.amount > 0 ? '+' : ''}₹{(transaction.monthlyEquivalent || Math.abs(transaction.amount)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     <span className="text-[10px] text-slate-500 dark:text-slate-400 font-normal">/mo</span>
                   </span>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white dark:bg-[#1b202e] border border-slate-200/80 dark:border-white/5">
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Commitment</span>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">
+                    {transaction.amount > 0 ? 'Total Expected Inflow' : 'Total Commitment'}
+                  </span>
                   <span className="font-mono font-bold text-slate-900 dark:text-white text-sm">
-                    ₹{(transaction.totalCommitment || (Math.abs(transaction.amount) * (transaction.recurringDurationMonths || 12))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    {transaction.amount > 0 ? '+' : ''}₹{(transaction.totalCommitment || (Math.abs(transaction.amount) * (transaction.recurringDurationMonths || 12))).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
