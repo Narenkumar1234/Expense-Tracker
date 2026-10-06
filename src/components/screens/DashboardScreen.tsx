@@ -223,15 +223,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </span>
           </button>
         </div>
-
-        <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
-          netBalance >= 0 ? 'bg-[#10b981]/15 text-[#4edea3]' : 'bg-[#ff7886]/15 text-[#ff7886]'
-        }`}>
-          <span className="material-symbols-outlined text-[14px]">
-            {netBalance >= 0 ? 'trending_up' : 'trending_down'}
-          </span>
-          <span>{netBalance >= 0 ? '+Net Surplus' : '-Net Deficit'}</span>
-        </div>
       </div>
 
       {/* Big Balance */}
@@ -329,9 +320,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             </div>
           </div>
         </div>
-        <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 rounded-full bg-[#10b981]/20 text-[#4edea3] text-xs font-bold font-mono">
-          {incomeSpentPercent}% spent
-        </span>
       </div>
 
       {/* Progress Bar */}
@@ -378,9 +366,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
             Daily average: ₹3,750.00
           </div>
         </div>
-        <span className="px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#4edea3] text-xs font-semibold font-mono">
-          Today: ₹1,670.00
-        </span>
       </div>
 
       {/* Bar chart */}
@@ -427,12 +412,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   const renderActivityCard = () => (
     <div className="space-y-2.5 select-none">
       <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-[#dfe2f1]">Activity</span>
-          <span className="px-2 py-0.5 rounded-full bg-[#171b26] text-[#bbcabf] text-[11px]">
-            {activityItems.length} recent
-          </span>
-        </div>
+        <span className="text-sm font-bold text-[#dfe2f1]">Activity</span>
         <button
           onClick={() => onNavigate('transactions')}
           className="text-xs font-semibold text-[#4edea3] hover:underline flex items-center gap-0.5 cursor-pointer"

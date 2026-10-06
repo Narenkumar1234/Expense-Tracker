@@ -71,10 +71,6 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
           <span className="text-xs font-semibold text-[#bbcabf]">
             Total Monthly Budget
           </span>
-          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#10b981]/15 text-[#4edea3] text-[11px] font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
-            <span>ON TRACK</span>
-          </span>
         </div>
 
         <div className="font-mono text-3xl font-bold tracking-tight text-[#dfe2f1]">
@@ -149,12 +145,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
       {/* Active Budgets Section */}
       <div className="space-y-2.5">
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-[#dfe2f1]">Active Budgets</span>
-            <span className="px-2 py-0.2 rounded-full bg-[#171b26] text-[#bbcabf] text-[11px] font-bold">
-              {budgets.length}
-            </span>
-          </div>
+          <span className="text-sm font-bold text-[#dfe2f1]">Active Budgets</span>
           <button className="text-xs font-semibold text-[#4edea3] hover:underline flex items-center gap-0.5">
             <span>Manage</span>
             <span className="material-symbols-outlined text-[15px]">chevron_right</span>
@@ -260,12 +251,7 @@ export const BudgetsScreen: React.FC<BudgetsScreenProps> = ({
       {/* Savings Goals Section */}
       <div className="space-y-2.5 pt-2">
         <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-[#dfe2f1]">Savings Goals</span>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-[#3131c0]/20 dark:text-[#c0c1ff] dark:border-transparent text-[11px] font-bold">
-              {savingsGoals.length} Active
-            </span>
-          </div>
+          <span className="text-sm font-bold text-[#dfe2f1]">Savings Goals</span>
           <button className="text-xs font-semibold text-emerald-600 dark:text-[#4edea3] hover:underline flex items-center gap-0.5 cursor-pointer">
             <span>View All</span>
             <span className="material-symbols-outlined text-[15px]">chevron_right</span>

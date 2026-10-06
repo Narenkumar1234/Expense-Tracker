@@ -243,10 +243,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           <span className="text-xs font-semibold uppercase tracking-wider text-[#bbcabf]">
             TOTAL SPENT
           </span>
-          <span className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#10b981]/15 text-[#4edea3] text-xs font-semibold">
-            <span className="material-symbols-outlined text-[14px]">insights</span>
-            <span>{periodExpenses.length} transactions</span>
-          </span>
         </div>
 
         <div className="font-mono text-3xl font-bold tracking-tight text-[#dfe2f1]">
