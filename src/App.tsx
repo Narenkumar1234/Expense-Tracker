@@ -26,6 +26,7 @@ import { TransactionDetailModal } from './components/modals/TransactionDetailMod
 import { CreateBudgetModal } from './components/modals/CreateBudgetModal';
 import { NotificationsModal } from './components/modals/NotificationsModal';
 import { AuraChatbot } from './components/AuraChatbot';
+import { AuraLogo } from './components/AuraLogo';
 import { User as FirebaseUser } from 'firebase/auth';
 import {
   loginWithGoogle,
@@ -67,9 +68,18 @@ export default function App() {
     setCurrentScreen(previousScreen || 'dashboard');
   };
 
-  // Firebase auth state
+  // Firebase auth & Initial PWA App Launch Splash State
   const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [authInitialized, setAuthInitialized] = useState(false);
+  const [isSplashMinTimerDone, setIsSplashMinTimerDone] = useState(false);
+
+  useEffect(() => {
+    // Graceful minimum splash duration (600ms) to ensure smooth native PWA pulse animation
+    const timer = setTimeout(() => {
+      setIsSplashMinTimerDone(true);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Onboarding state
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(() => {
@@ -134,7 +144,13 @@ export default function App() {
 
   // Listen to Firebase Auth state
   useEffect(() => {
+    // Safety fallback: ensure splash screen unlocks even if Firebase is slow/offline
+    const safetyTimer = setTimeout(() => {
+      setAuthInitialized(true);
+    }, 2500);
+
     const unsubscribeAuth = subscribeToAuth(async (fUser) => {
+      clearTimeout(safetyTimer);
       setFirebaseUser(fUser);
       setAuthInitialized(true);
 
@@ -597,6 +613,20 @@ export default function App() {
     }
     showToast('Profile updated', 'updated');
   };
+
+  // Initial loading splash screen: strictly just logo and app name with animate-pulse
+  if (!authInitialized || !isSplashMinTimerDone) {
+    return (
+      <div className="fixed inset-0 bg-[#0f131d] flex flex-col items-center justify-center z-50 select-none">
+        <div className="flex flex-col items-center justify-center gap-3.5 animate-pulse">
+          <AuraLogo size={56} iconSize={26} />
+          <span className="text-2xl font-bold tracking-tight text-[#dfe2f1]">
+            Aura
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   // If onboarding is not completed, render Onboarding Screen
   if (!hasCompletedOnboarding) {

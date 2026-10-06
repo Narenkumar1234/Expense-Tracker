@@ -4,20 +4,26 @@ interface AuraLogoProps {
   size?: number;
   iconSize?: number;
   className?: string;
+  roundedClassName?: string;
 }
 
 export const AuraLogo: React.FC<AuraLogoProps> = ({
   size = 28,
   iconSize = 13,
   className = '',
+  roundedClassName,
 }) => {
+  const outerRounding = roundedClassName || (size >= 48 ? 'rounded-2xl' : 'rounded-lg');
+  const innerRounding = roundedClassName ? 'rounded-[inherit]' : (size >= 48 ? 'rounded-[14px]' : 'rounded-[6.5px]');
+  const padding = size >= 48 ? 'p-[2px]' : 'p-[1.5px]';
+
   return (
     <div
       style={{ width: `${size}px`, height: `${size}px` }}
-      className={`relative p-[1.5px] rounded-lg bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] shrink-0 ${className}`}
+      className={`relative ${padding} ${outerRounding} bg-gradient-to-tr from-[#ff3b30] via-[#ff9500] via-[#ffcc00] via-[#34c759] via-[#007aff] to-[#af52de] shrink-0 ${className}`}
       aria-hidden="true"
     >
-      <div className="w-full h-full rounded-[6.5px] bg-white dark:bg-[#171b26] flex items-center justify-center">
+      <div className={`w-full h-full ${innerRounding} bg-white dark:bg-[#171b26] flex items-center justify-center`}>
         <svg
           viewBox="0 0 24 24"
           style={{ width: `${iconSize}px`, height: `${iconSize}px` }}

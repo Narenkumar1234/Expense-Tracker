@@ -22,7 +22,38 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
   </head>
   <body class="bg-[#0f131d] text-[#dfe2f1] antialiased selection:bg-[#10b981]/30 selection:text-[#4edea3]">
-    <div id="root"></div>
+    <div id="root">
+      <div id="pwa-splash" style="position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background-color:#0f131d;color:#dfe2f1;font-family:'Plus Jakarta Sans',system-ui,-apple-system,sans-serif;z-index:9999;user-select:none;">
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;animation:pwaPulse 1.8s ease-in-out infinite;">
+          <div style="width:56px;height:56px;padding:2px;border-radius:16px;background:linear-gradient(to top right, #ff3b30, #ff9500, #ffcc00, #34c759, #007aff, #af52de);flex-shrink:0;">
+            <div style="width:100%;height:100%;border-radius:14px;background-color:#171b26;display:flex;align-items:center;justify-content:center;">
+              <svg viewBox="0 0 24 24" style="width:26px;height:26px;display:block;" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="pwaSplashChatGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#ff3b30" />
+                    <stop offset="50%" stop-color="#af52de" />
+                    <stop offset="100%" stop-color="#007aff" />
+                  </linearGradient>
+                </defs>
+                <path
+                  fill-rule="evenodd"
+                  clip-rule="evenodd"
+                  d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2ZM6 6H18V8H6V6ZM6 9.5H18V11.5H6V9.5ZM6 13H14V15H6V13Z"
+                  fill="url(#pwaSplashChatGrad)"
+                />
+              </svg>
+            </div>
+          </div>
+          <span style="font-size:24px;font-weight:700;letter-spacing:-0.025em;color:#dfe2f1;">Aura</span>
+        </div>
+      </div>
+      <style>
+        @keyframes pwaPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.55; transform: scale(0.98); }
+        }
+      </style>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
