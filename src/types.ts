@@ -96,6 +96,7 @@ export interface ChatMessage {
   text: string;
   timestamp: string;
   createdAt?: string;
+  imageUrl?: string;
   toolExecutions?: {
     tool: string;
     summary: string;

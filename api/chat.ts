@@ -176,13 +176,29 @@ export default async function handler(req: any, res: any) {
     });
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { messages, context } = body;
+    const { messages, context, image } = body;
     const selectedModel = 'gemini-3.1-flash-lite';
 
-    const contents = (messages || []).map((m: any) => ({
-      role: m.role === 'user' ? 'user' : 'model',
-      parts: [{ text: m.text || '' }],
-    }));
+    const contents = (messages || []).map((m: any, idx: number) => {
+      const isLastMessage = idx === (messages.length - 1);
+      const parts: any[] = [{ text: m.text || '' }];
+
+      // Attach ephemeral image inlineData only to the latest user message
+      if (isLastMessage && m.role === 'user' && image?.base64 && image?.mimeType) {
+        const rawBase64 = image.base64.replace(/^data:[^;]+;base64,/, '');
+        parts.push({
+          inlineData: {
+            mimeType: image.mimeType || 'image/jpeg',
+            data: rawBase64,
+          },
+        });
+      }
+
+      return {
+        role: m.role === 'user' ? 'user' : 'model',
+        parts,
+      };
+    });
 
     const systemInstruction = `You are Aura Assistant, a professional personal financial assistant.
 You can execute ANY action requested by the user directly via tools:
@@ -192,6 +208,12 @@ You can execute ANY action requested by the user directly via tools:
 - addOrUpdateBudget: Set or tweak envelope limits.
 - updateUserProfile: Change salary, pay cycle, or preferences.
 - navigateScreen: Switch views (dashboard, analytics, assistant, transactions, profile, addCard).
+
+RECEIPT & BILL IMAGES:
+When an image of a bill, receipt, invoice, or payment screenshot is provided:
+- Carefully inspect the image to extract: Store/Merchant name, Total amount, Date, and Category (FOOD, GROCERIES, BILLS, SHOPPING, HEALTH, ENTERTAINMENT, etc.).
+- Call addTransaction with a negative amount (e.g., -540) to log the expense directly.
+- In your reply, provide a brief summary of the scanned receipt items or total in ₹ INR.
 
 LIVE USER DATA:
 - Name: ${context?.user?.name || 'Aura Member'}

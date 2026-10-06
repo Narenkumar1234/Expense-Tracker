@@ -85,6 +85,11 @@ service cloud.firestore {
         allow delete: if isOwner(userId);
       }
 
+      // Single conversation session document for 1-read efficient chat history
+      match /chat/{chatId} {
+        allow read, write: if isOwner(userId);
+      }
+
       // Transactions subcollection
       match /transactions/{transactionId} {
         allow read: if isOwner(userId);
@@ -121,6 +126,10 @@ service cloud.firestore {
     }
 
     match /messages/{messageId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /chat/{chatId} {
       allow read, write: if isSignedIn();
     }
 

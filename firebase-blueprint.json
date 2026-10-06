@@ -79,6 +79,20 @@
         "createdAt": { "type": "string" }
       },
       "required": ["id", "userId", "role", "text"]
+    },
+    "ChatSession": {
+      "title": "Chat Session",
+      "description": "Capped conversation session thread containing messages array for efficient 1-read loading",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "updatedAt": { "type": "string" },
+        "messages": {
+          "type": "array",
+          "items": { "type": "object" }
+        }
+      },
+      "required": ["userId", "updatedAt", "messages"]
     }
   },
   "firestore": {
@@ -101,6 +115,10 @@
     "/users/{userId}/messages/{messageId}": {
       "schema": "ChatMessage",
       "description": "Chat messages between the user and Aura assistant"
+    },
+    "/users/{userId}/chat/{chatId}": {
+      "schema": "ChatSession",
+      "description": "Unified conversation thread loaded in a single read call"
     }
   }
 }

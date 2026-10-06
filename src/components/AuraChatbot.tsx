@@ -210,11 +210,149 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
   const [isListening, setIsListening] = useState(false);
   const [speechError, setSpeechError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{
+    base64: string;
+    mimeType: string;
+    previewUrl: string;
+    fileName: string;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const baseTextBeforeSpeechRef = useRef('');
+
+  const compressReceiptImage = (file: File): Promise<{ base64: string; mimeType: string; previewUrl: string; fileName: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let { width, height } = img;
+          const maxDim = 1024;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            const raw = (e.target?.result as string) || '';
+            resolve({
+              base64: raw.split(',')[1] || raw,
+              mimeType: file.type || 'image/jpeg',
+              previewUrl: raw,
+              fileName: file.name,
+            });
+            return;
+          }
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.82);
+          const base64 = compressedDataUrl.replace(/^data:[^;]+;base64,/, '');
+          resolve({
+            base64,
+            mimeType: 'image/jpeg',
+            previewUrl: compressedDataUrl,
+            fileName: file.name,
+          });
+        };
+        img.onerror = () => reject(new Error('Failed to load image'));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleProcessImageFile = async (file: File) => {
+    try {
+      const compressed = await compressReceiptImage(file);
+      setSelectedImage(compressed);
+    } catch (err) {
+      console.error('Image processing error:', err);
+      setSpeechError('Could not process receipt image.');
+      setTimeout(() => setSpeechError(null), 3000);
+    }
+  };
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      await handleProcessImageFile(file);
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items || items.length === 0) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.type.startsWith('image/')) {
+        const file = item.getAsFile();
+        if (file) {
+          e.preventDefault();
+          await handleProcessImageFile(file);
+          return;
+        }
+      }
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      const file = files[0];
+      if (file.type.startsWith('image/')) {
+        await handleProcessImageFile(file);
+      }
+    }
+  };
+
+  // Support global clipboard paste anywhere while Assistant screen is active
+  useEffect(() => {
+    const handleGlobalPaste = (e: ClipboardEvent) => {
+      const activeEl = document.activeElement;
+      // If user is focused on an external input, don't capture
+      if (
+        activeEl &&
+        activeEl !== inputRef.current &&
+        (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA')
+      ) {
+        return;
+      }
+
+      const items = e.clipboardData?.items;
+      if (!items || items.length === 0) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            e.preventDefault();
+            handleProcessImageFile(file);
+            return;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
+  }, []);
 
   const stopListening = () => {
     if (recognitionRef.current) {
@@ -574,9 +712,12 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
   const handleSend = async (textToSend?: string) => {
     stopListening();
-    const messageText = (textToSend || input).trim();
+    const rawText = (textToSend || input).trim();
+    const messageText = rawText || (selectedImage ? 'Analyze this receipt and record the expense' : '');
     if (!messageText || isLoading) return;
 
+    const stagedImage = selectedImage;
+    setSelectedImage(null);
     setInput('');
 
     const userMsg: ChatMessage = {
@@ -584,12 +725,13 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       role: 'user',
       text: messageText,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      imageUrl: stagedImage?.previewUrl,
     };
 
     const updatedMessages = [...messages, userMsg];
     setMessages(updatedMessages);
     if (firebaseUser) {
-      saveChatMessage(firebaseUser.uid, userMsg);
+      saveChatMessage(firebaseUser.uid, userMsg, updatedMessages);
     }
     setIsLoading(true);
 
@@ -599,10 +741,16 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({
+          messages: updatedMessages.slice(-15).map((m) => ({
             role: m.role,
             text: m.text,
           })),
+          image: stagedImage
+            ? {
+                base64: stagedImage.base64,
+                mimeType: stagedImage.mimeType,
+              }
+            : undefined,
           context: {
             user,
             cards,
@@ -640,7 +788,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
       setMessages((prev) => [...prev, assistantMsg]);
       if (firebaseUser) {
-        saveChatMessage(firebaseUser.uid, assistantMsg);
+        saveChatMessage(firebaseUser.uid, assistantMsg, [...updatedMessages, assistantMsg]);
       }
     } catch (err: any) {
       console.error('Chat error:', err);
@@ -656,7 +804,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       };
       setMessages((prev) => [...prev, errorMsg]);
       if (firebaseUser) {
-        saveChatMessage(firebaseUser.uid, errorMsg);
+        saveChatMessage(firebaseUser.uid, errorMsg, [...updatedMessages, errorMsg]);
       }
     } finally {
       setIsLoading(false);
@@ -709,6 +857,17 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                   {m.timestamp}
                 </span>
               </div>
+
+              {/* Ephemeral Receipt Preview Thumbnail */}
+              {m.imageUrl && (
+                <div className="mb-2 max-w-[220px] rounded-xl overflow-hidden border border-slate-200 dark:border-white/10 shadow-xs bg-slate-100 dark:bg-[#171b26]">
+                  <img
+                    src={m.imageUrl}
+                    alt="Receipt"
+                    className="w-full h-auto max-h-48 object-cover rounded-xl"
+                  />
+                </div>
+              )}
 
               {/* Markdown parsed text content */}
               <MarkdownContent content={m.text} isUser={m.role === 'user'} />
@@ -827,6 +986,36 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
       {/* Input Bar */}
       <div className="pt-2 pb-2 shrink-0 relative z-10 border-t border-slate-200/80 dark:border-white/[0.04]">
+        {/* Ephemeral Staged Receipt Preview Chip */}
+        {selectedImage && (
+          <div className="mb-2 flex items-center justify-between p-2 rounded-xl bg-slate-100 dark:bg-[#171b26] border border-slate-200 dark:border-white/10 animate-in fade-in zoom-in-95">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <img
+                src={selectedImage.previewUrl}
+                alt="Receipt Preview"
+                className="w-10 h-10 object-cover rounded-lg border border-slate-200 dark:border-white/10 shrink-0"
+              />
+              <div className="min-w-0">
+                <span className="text-xs font-semibold text-slate-800 dark:text-[#dfe2f1] flex items-center gap-1 truncate">
+                  <span className="material-symbols-outlined text-[14px] text-emerald-600 dark:text-[#4edea3]">receipt_long</span>
+                  Receipt Attached
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-[#bbcabf] truncate block">
+                  Tap send to scan & record expense
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedImage(null)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-500 hover:text-rose-500 hover:bg-slate-200 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+              title="Remove image"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
+          </div>
+        )}
+
         {speechError && (
           <div className="mb-2 flex items-center gap-1.5 px-1 text-xs text-amber-700 dark:text-amber-400 animate-in fade-in duration-200">
             <span className="material-symbols-outlined text-[15px]">info</span>
@@ -834,11 +1023,23 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
           </div>
         )}
 
+        {/* Hidden File Input for Receipt Capture */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          onChange={handleImageSelect}
+          className="hidden"
+        />
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragOver={(e) => e.preventDefault()}
           className="flex items-center gap-2"
         >
           <input
@@ -846,7 +1047,14 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isListening ? "Listening... Speak now (tap stop button when done)..." : "Type a request (e.g. 'Add ₹1,200 Electricity bill')..."}
+            onPaste={handlePaste}
+            placeholder={
+              isListening
+                ? "Listening... Speak now (tap stop button when done)..."
+                : selectedImage
+                ? "Optional note (e.g. 'Paid via ICICI')... or tap Send"
+                : "Type a request, or paste receipt (Ctrl+V)..."
+            }
             disabled={isLoading}
             className={`flex-1 h-11 bg-white dark:bg-[#171b26] border ${
               isListening
@@ -854,6 +1062,24 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
                 : 'border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30'
             } rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs`}
           />
+
+          {/* Outlined Receipt Upload Button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || isListening}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer disabled:opacity-40 border ${
+              selectedImage
+                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-[#4edea3]'
+                : 'border-slate-300 dark:border-white/10 bg-transparent hover:bg-slate-100/70 dark:hover:bg-white/[0.04] text-slate-700 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20'
+            } active:scale-95 group`}
+            aria-label="Upload or paste bill or receipt"
+            title="Upload or paste bill/receipt image (Ctrl+V supported)"
+          >
+            <span className="material-symbols-outlined text-[19px] transition-transform group-hover:scale-105">
+              receipt_long
+            </span>
+          </button>
 
           {/* Voice / Stop Button - Acts directly as Stop Button when recording */}
           {isListening ? (
@@ -887,7 +1113,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
           {/* Send Button */}
           <button
             type="submit"
-            disabled={!input.trim() || isLoading}
+            disabled={(!input.trim() && !selectedImage) || isLoading}
             className="w-11 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-400 dark:hover:opacity-95 text-white dark:text-[#002113] font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40 shrink-0"
             aria-label="Send message"
           >

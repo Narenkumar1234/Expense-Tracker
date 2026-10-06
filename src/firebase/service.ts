@@ -5,6 +5,7 @@ import {
   deleteDoc,
   onSnapshot,
   getDoc,
+  getDocs,
 } from 'firebase/firestore';
 import {
   signInWithPopup,
@@ -487,47 +488,111 @@ export async function migrateGuestDataToFirestore(
 }
 
 // Chat Messages Firestore Synchronization for Signed-In Members
+// Uses single session document pattern to load the entire capped conversation in 1 single Firestore read operation
+export const CHAT_HISTORY_CAP = 30;
+
 export function subscribeToChatMessages(
   userId: string,
-  callback: (messages: ChatMessage[]) => void
+  callback: (messages: ChatMessage[]) => void,
+  messageLimit = CHAT_HISTORY_CAP
 ): () => void {
-  const collectionPath = `users/${userId}/messages`;
-  const messagesRef = collection(db, 'users', userId, 'messages');
+  const sessionDocRef = doc(db, 'users', userId, 'chat', 'active');
+  let hasCheckedLegacy = false;
 
   return onSnapshot(
-    messagesRef,
-    (snapshot) => {
-      const list: ChatMessage[] = [];
-      snapshot.forEach((d) => {
-        const data = d.data();
-        list.push({
-          id: data.id || d.id,
-          role: data.role,
-          text: data.text || '',
-          timestamp: data.timestamp || 'Just now',
-          createdAt: data.createdAt,
-          toolExecutions: data.toolExecutions || [],
-        });
-      });
-      // Sort in ascending order by timestamp / creation
-      list.sort((a, b) => {
-        const timeA = a.createdAt || a.id;
-        const timeB = b.createdAt || b.id;
-        return timeA.localeCompare(timeB);
-      });
-      callback(list);
+    sessionDocRef,
+    async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
+        const list: ChatMessage[] = Array.isArray(data?.messages) ? data.messages : [];
+        const capped = list.length > messageLimit ? list.slice(list.length - messageLimit) : list;
+        callback(capped);
+      } else if (!hasCheckedLegacy) {
+        hasCheckedLegacy = true;
+        // Migration fallback: check legacy individual messages subcollection if present
+        try {
+          const messagesRef = collection(db, 'users', userId, 'messages');
+          const legacySnap = await getDocs(messagesRef);
+          if (!legacySnap.empty) {
+            const list: ChatMessage[] = [];
+            legacySnap.forEach((d) => {
+              const data = d.data();
+              list.push({
+                id: data.id || d.id,
+                role: data.role,
+                text: data.text || '',
+                timestamp: data.timestamp || 'Just now',
+                createdAt: data.createdAt,
+                toolExecutions: data.toolExecutions || [],
+              });
+            });
+            list.sort((a, b) => {
+              const timeA = a.createdAt || a.id;
+              const timeB = b.createdAt || b.id;
+              return timeA.localeCompare(timeB);
+            });
+            const capped = list.length > messageLimit ? list.slice(list.length - messageLimit) : list;
+            if (capped.length > 0) {
+              callback(capped);
+              // Migrate to the 1-read session document for all future sessions
+              await setDoc(sessionDocRef, {
+                userId,
+                updatedAt: new Date().toISOString(),
+                messages: capped,
+              });
+            }
+          }
+        } catch (migErr) {
+          console.warn('Chat legacy sync notice:', migErr);
+        }
+      }
     },
     (error) => {
-      console.warn(`Firestore chat messages notice on ${collectionPath}:`, error?.message || error);
+      console.warn(`Firestore chat session notice on users/${userId}/chat/active:`, error?.message || error);
     }
   );
 }
 
-export async function saveChatMessage(userId: string, message: ChatMessage): Promise<void> {
-  const docPath = `users/${userId}/messages/${message.id}`;
+export async function saveChatMessage(
+  userId: string,
+  message: ChatMessage,
+  currentMessagesList?: ChatMessage[]
+): Promise<void> {
+  const sessionDocRef = doc(db, 'users', userId, 'chat', 'active');
   try {
-    const docRef = doc(db, 'users', userId, 'messages', message.id);
-    await setDoc(docRef, {
+    let list: ChatMessage[] = [];
+    if (currentMessagesList && currentMessagesList.length > 0) {
+      list = [...currentMessagesList];
+    } else {
+      const snap = await getDoc(sessionDocRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (Array.isArray(data?.messages)) {
+          list = data.messages;
+        }
+      }
+    }
+
+    const withoutDup = list.filter((m) => m.id !== message.id);
+    withoutDup.push(message);
+    const capped = withoutDup.length > CHAT_HISTORY_CAP
+      ? withoutDup.slice(withoutDup.length - CHAT_HISTORY_CAP)
+      : withoutDup;
+
+    // Single-document atomic thread update (1 write, 1 future read for entire conversation)
+    await setDoc(
+      sessionDocRef,
+      {
+        userId,
+        updatedAt: new Date().toISOString(),
+        messages: capped,
+      },
+      { merge: true }
+    );
+
+    // Also persist individual message document for backup / granular querying
+    const individualDocRef = doc(db, 'users', userId, 'messages', message.id);
+    await setDoc(individualDocRef, {
       id: message.id,
       userId,
       role: message.role,
@@ -537,6 +602,6 @@ export async function saveChatMessage(userId: string, message: ChatMessage): Pro
       toolExecutions: message.toolExecutions || [],
     });
   } catch (error) {
-    console.error(`Error persisting chat message to ${docPath}:`, error);
+    console.error(`Error persisting chat message for user ${userId}:`, error);
   }
 }
