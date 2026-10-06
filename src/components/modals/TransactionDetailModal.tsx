@@ -34,12 +34,12 @@ export const TransactionDetailModal: React.FC<TransactionDetailModalProps> = ({
               </span>
             </div>
             <div className="min-w-0">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-[#dfe2f1] truncate">
-                {transaction.merchant}
-              </h3>
-              <span className="text-[10px] text-slate-500 dark:text-[#bbcabf] font-mono block">
-                {transaction.date} • {transaction.time}
+              <span className="text-xs font-bold text-slate-900 dark:text-[#dfe2f1] uppercase tracking-wider block truncate">
+                {transaction.category}
               </span>
+              <p className="text-[11px] text-slate-600 dark:text-[#bbcabf] truncate max-w-[170px] sm:max-w-xs font-medium" title={transaction.merchant || transaction.notes || transaction.category}>
+                {transaction.merchant || transaction.notes || transaction.category}
+              </p>
             </div>
           </div>
 

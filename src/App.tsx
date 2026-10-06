@@ -194,10 +194,17 @@ export default function App() {
           console.error('Error fetching/migrating user profile:', err);
         }
       } else {
-        // Guest mode: fallback to local storage
+        // Not signed in / signed out: fallback to local storage only if marked complete
         try {
           const isComplete = localStorage.getItem('aura_onboarding_completed') === 'true';
           setHasCompletedOnboarding(isComplete);
+          if (!isComplete) {
+            setUser(INITIAL_USER);
+            setCards([]);
+            setBudgets([]);
+            setTransactions([]);
+            setSavingsGoals([]);
+          }
         } catch {}
       }
     });
@@ -345,16 +352,35 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await logoutUser();
-      // Switch back to local guest storage
+      
+      // Wipe all local storage keys so no previous user details or transactions linger
       try {
-        const savedUser = localStorage.getItem('aura_user_profile');
-        if (savedUser) setUser(JSON.parse(savedUser));
-        else setUser(INITIAL_USER);
-      } catch {
-        setUser(INITIAL_USER);
+        localStorage.removeItem('aura_onboarding_completed');
+        localStorage.removeItem('aura_user_profile');
+        localStorage.removeItem('aura_cards');
+        localStorage.removeItem('aura_budgets');
+        localStorage.removeItem('aura_transactions');
+        localStorage.removeItem('aura_savings_goals');
+        localStorage.removeItem('aura_chat_history');
+        if (firebaseUser?.uid) {
+          localStorage.removeItem(`aura_chat_history_${firebaseUser.uid}`);
+        }
+        sessionStorage.clear();
+      } catch (e) {
+        console.error('Storage clear error:', e);
       }
+
+      // Reset state and move immediately to the onboarding screen
+      setFirebaseUser(null);
+      setUser(INITIAL_USER);
+      setCards([]);
+      setBudgets([]);
+      setTransactions([]);
+      setSavingsGoals([]);
+      setHasCompletedOnboarding(false);
       setCurrentScreen('dashboard');
-      showToast('Signed out', 'updated');
+
+      showToast('Signed out successfully', 'updated');
     } catch (err) {
       console.error('Logout error', err);
     }

@@ -63,6 +63,11 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
       if (firebaseUser.photoURL) {
         setSelectedAvatar(firebaseUser.photoURL);
       }
+    } else {
+      setIsGuestMode(true);
+      setName('');
+      setSelectedAvatar(AVATAR_OPTIONS[3]);
+      setStep(1);
     }
   }, [firebaseUser]);
 
@@ -304,105 +309,78 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
         }`}
       >
         {/* ======================================================== */}
-        {/* STEP 1: AUTH HERO SHOWCASE (Matches image.png in Dark & White) */}
+        {/* STEP 1: AUTH HERO SHOWCASE */}
         {/* ======================================================== */}
         {step === 1 && (
-          <div className="space-y-4">
-            {/* HERO CARD CONTAINER WITH GRID PATTERN */}
-            <div className="relative rounded-3xl bg-white dark:bg-[#0d121e] border border-slate-200 dark:border-white/10 p-4 sm:p-5 shadow-xl overflow-hidden transition-colors">
-              {/* Grid Background Pattern */}
-              <div
-                className="absolute inset-0 opacity-40 dark:opacity-25 pointer-events-none"
-                style={{
-                  backgroundImage:
-                    'radial-gradient(circle, rgba(16, 185, 129, 0.25) 1px, transparent 1px)',
-                  backgroundSize: '20px 20px',
-                }}
-              />
+          <div className="space-y-5">
+            {/* CARD ALONE: AURA VAULT */}
+            <div className="relative rounded-2xl bg-[#0f1422] dark:bg-[#161c2b] text-white p-5 border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.35)] overflow-hidden transition-all">
+              {/* Subtle Ambient Glow */}
               <div className="absolute -top-10 -right-10 w-44 h-44 bg-emerald-500/15 rounded-full blur-2xl pointer-events-none" />
 
-              {/* Top-Right Badge: Smart Cycle Active */}
-              <div className="flex justify-end relative z-10">
-                <div className="px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#1a2133] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#c0c1ff] text-[10px] font-bold flex items-center gap-1.5 shadow-sm">
-                  <span className="material-symbols-outlined text-[13px]">credit_card</span>
-                  <span>Smart Cycle Active</span>
-                </div>
-              </div>
-
-              {/* FLOATING CARD: AURA VAULT */}
-              <div className="relative z-10 my-3 rounded-2xl bg-[#0f1422] dark:bg-[#161c2b] text-white p-4 sm:p-4.5 border border-white/10 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
-                {/* Header: Dot + AURA VAULT | Contactless Waves */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
-                    <span className="font-bold text-xs uppercase tracking-wider text-white">
-                      AURA VAULT
-                    </span>
-                  </div>
-                  <span className="material-symbols-outlined text-[20px] text-[#4edea3]">
-                    contactless
+              {/* Header: Dot + AURA VAULT | Contactless Waves */}
+              <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse" />
+                  <span className="font-bold text-xs uppercase tracking-wider text-white">
+                    AURA VAULT
                   </span>
                 </div>
+                <span className="material-symbols-outlined text-[20px] text-[#4edea3]">
+                  contactless
+                </span>
+              </div>
 
-                {/* Card Center: Net Monthly Delta + Circular 84% Donut */}
-                <div className="flex items-center justify-between pt-3 pb-1">
-                  <div>
-                    <span className="text-[11px] font-semibold text-[#bbcabf] block">
-                      Net Monthly Delta
-                    </span>
-                    <div className="font-mono text-2xl font-extrabold text-[#4edea3] flex items-center gap-1 mt-0.5">
-                      <span>+₹32,500</span>
-                      <span className="material-symbols-outlined text-[18px]">trending_up</span>
-                    </div>
-                  </div>
-
-                  {/* Circular 84% Ring */}
-                  <div className="relative w-12 h-12 flex items-center justify-center">
-                    <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                      <path
-                        className="text-white/10"
-                        stroke="currentColor"
-                        strokeWidth="3.2"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                      <path
-                        className="text-[#10b981]"
-                        stroke="currentColor"
-                        strokeWidth="3.2"
-                        strokeDasharray="84, 100"
-                        strokeLinecap="round"
-                        fill="none"
-                        d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                      />
-                    </svg>
-                    <span className="absolute text-[11px] font-bold text-white">84%</span>
+              {/* Card Center: Net Monthly Delta + Circular 84% Donut */}
+              <div className="flex items-center justify-between pt-4 pb-1 relative z-10">
+                <div>
+                  <span className="text-[11px] font-semibold text-[#bbcabf] block">
+                    Net Monthly Delta
+                  </span>
+                  <div className="font-mono text-2xl font-extrabold text-[#4edea3] flex items-center gap-1 mt-0.5">
+                    <span>+₹32,500</span>
+                    <span className="material-symbols-outlined text-[18px]">trending_up</span>
                   </div>
                 </div>
 
-                {/* Glowing Emerald Spline Wave */}
-                <div className="pt-2 relative">
-                  <svg viewBox="0 0 260 30" className="w-full h-7 overflow-visible">
+                {/* Circular 84% Ring */}
+                <div className="relative w-12 h-12 flex items-center justify-center">
+                  <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
                     <path
-                      d="M 5,22 Q 60,20 120,14 T 240,6"
+                      className="text-white/10"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
                       fill="none"
-                      stroke="#10b981"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      className="filter drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                     />
-                    <circle cx="240" cy="6" r="4.5" fill="#10b981" className="filter drop-shadow-[0_0_8px_rgba(16,185,129,1)]" />
-                    <circle cx="240" cy="6" r="2" fill="#ffffff" />
+                    <path
+                      className="text-[#10b981]"
+                      stroke="currentColor"
+                      strokeWidth="3.2"
+                      strokeDasharray="84, 100"
+                      strokeLinecap="round"
+                      fill="none"
+                      d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                    />
                   </svg>
+                  <span className="absolute text-[11px] font-bold text-white">84%</span>
                 </div>
               </div>
 
-              {/* Bottom Badge: Pacing • 84% Under Cap */}
-              <div className="relative z-10 flex items-center">
-                <div className="px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-[#10241f] border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-[#4edea3] text-[10px] font-bold inline-flex items-center gap-1.5 shadow-sm">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-[#10b981]" />
-                  <span>Pacing • 84% Under Cap</span>
-                </div>
+              {/* Glowing Emerald Spline Wave */}
+              <div className="pt-2 relative z-10">
+                <svg viewBox="0 0 260 30" className="w-full h-7 overflow-visible">
+                  <path
+                    d="M 5,22 Q 60,20 120,14 T 240,6"
+                    fill="none"
+                    stroke="#10b981"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    className="filter drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                  />
+                  <circle cx="240" cy="6" r="4.5" fill="#10b981" className="filter drop-shadow-[0_0_8px_rgba(16,185,129,1)]" />
+                  <circle cx="240" cy="6" r="2" fill="#ffffff" />
+                </svg>
               </div>
             </div>
 
@@ -417,28 +395,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center text-slate-900 dark:text-white leading-tight">
               Master Your Money with Precision
             </h1>
-
-            {/* FEATURE VALUE PILLS */}
-            <div className="flex flex-col items-center gap-2 pt-1">
-              {/* Primary centered tag */}
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-[#122822] border border-emerald-300 dark:border-emerald-500/30 text-emerald-700 dark:text-[#4edea3] text-xs font-semibold shadow-xs">
-                <span className="material-symbols-outlined text-[15px]">credit_card</span>
-                <span>₹ INR Multi-card tracking</span>
-              </div>
-
-              {/* Row with two feature tags */}
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#181d2a] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#dfe2f1] text-[11px] font-semibold shadow-xs">
-                  <span className="material-symbols-outlined text-[14px] text-slate-500 dark:text-[#bbcabf]">calendar_month</span>
-                  <span>Auto-cycle bill alerts</span>
-                </div>
-
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-[#181d2a] border border-slate-200 dark:border-white/10 text-slate-700 dark:text-[#dfe2f1] text-[11px] font-semibold shadow-xs">
-                  <span className="material-symbols-outlined text-[14px] text-emerald-600 dark:text-[#4edea3]">lock</span>
-                  <span>Bank-grade encrypted</span>
-                </div>
-              </div>
-            </div>
 
             {/* ACTION BUTTONS (Matching image.png) */}
             <div className="space-y-2.5 pt-2 max-w-sm mx-auto w-full">

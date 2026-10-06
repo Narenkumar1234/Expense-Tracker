@@ -1,8 +1,8 @@
 import { Transaction, PaymentCard, BudgetItem, SavingsGoal, UserProfile } from '../types';
 
 export const INITIAL_USER: UserProfile = {
-  name: 'Guest User',
-  email: 'guest@device.local',
+  name: '',
+  email: '',
   tier: 'Personal',
   avatarUrl: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80',
   monthlyBaseIncome: 0,

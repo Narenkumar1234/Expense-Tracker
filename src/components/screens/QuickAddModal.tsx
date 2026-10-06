@@ -1,6 +1,25 @@
 import React, { useState } from 'react';
 import { Transaction, PaymentCard, UserProfile } from '../../types';
 
+function getFuzzyDescription(category: string, txType: 'expense' | 'income'): string {
+  const cat = (category || '').toLowerCase();
+  if (txType === 'income') {
+    if (cat.includes('salary')) return 'Monthly Salary Credit';
+    if (cat.includes('stock') || cat.includes('invest')) return 'Investment Dividend / Return';
+    if (cat.includes('free') || cat.includes('lance') || cat.includes('consult')) return 'Freelance & Consulting Payout';
+    if (cat.includes('rent')) return 'Rental Inflow';
+    return 'Income Deposit';
+  }
+  if (cat.includes('food') || cat.includes('dining')) return 'Dining & Food Expense';
+  if (cat.includes('grocer')) return 'Groceries & Essentials';
+  if (cat.includes('transit') || cat.includes('transport') || cat.includes('fuel') || cat.includes('cab') || cat.includes('travel')) return 'Commute & Travel';
+  if (cat.includes('shop')) return 'Shopping & Retail Purchase';
+  if (cat.includes('bill') || cat.includes('util') || cat.includes('elect') || cat.includes('rent')) return 'Utility & Bill Payment';
+  if (cat.includes('fun') || cat.includes('entertain') || cat.includes('movie')) return 'Leisure & Entertainment';
+  if (cat.includes('health') || cat.includes('med') || cat.includes('gym')) return 'Health & Wellness';
+  return 'General Expense';
+}
+
 interface QuickAddModalProps {
   initialType?: 'expense' | 'income';
   editTransaction?: Transaction | null;
@@ -79,7 +98,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
       : getCurrentFormattedDateTime()
   );
   const [merchantNote, setMerchantNote] = useState(
-    editTransaction ? (editTransaction.merchant || editTransaction.notes || '') : 'Dinner with Sarah at Osteria'
+    editTransaction ? (editTransaction.merchant || editTransaction.notes || '') : ''
   );
 
   // Recurring settings
@@ -177,7 +196,10 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
     };
 
     setTimeout(() => {
-      const finalMerchant = merchantNote.trim() || (txType === 'income' ? (selectedCategory === 'Salary' ? 'Monthly Salary' : 'Income Deposit') : 'New Entry');
+      const trimmedNote = merchantNote.trim();
+      const fuzzy = getFuzzyDescription(selectedCategory, txType);
+      const finalMerchant = trimmedNote || fuzzy;
+      const finalNotes = trimmedNote || fuzzy;
       const finalCategory = selectedCategory.toUpperCase();
       const finalCategoryType = categoryTypeMap[selectedCategory] || 'OTHER';
       const finalIcon = currentCategories.find((c) => c.id === selectedCategory)?.icon || 'receipt';
@@ -192,7 +214,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           amount: finalAmount,
           account: finalAccount,
           icon: finalIcon,
-          notes: merchantNote,
+          notes: finalNotes,
           isRecurring: isRecurring,
           recurringDurationMonths: isRecurring ? recurringMonths : undefined,
           recurringFrequency: isRecurring ? recurringFrequency : undefined,
@@ -213,7 +235,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           account: finalAccount,
           status: 'completed',
           icon: finalIcon,
-          notes: merchantNote,
+          notes: finalNotes,
           isRecurring: isRecurring,
           recurringDurationMonths: isRecurring ? recurringMonths : undefined,
           recurringFrequency: isRecurring ? recurringFrequency : undefined,
@@ -411,11 +433,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                   rows={2}
                   value={merchantNote}
                   onChange={(e) => setMerchantNote(e.target.value)}
-                  placeholder={
-                    txType === 'expense'
-                      ? 'Enter description or note (e.g., Dinner with Sarah at Osteria, weekly groceries, cab ride)...'
-                      : 'Enter description or note (e.g., Monthly salary credit, dividend payout, freelance gig)...'
-                  }
+                  placeholder={`e.g., ${getFuzzyDescription(selectedCategory, txType)} (or custom note)...`}
                   className="flex-1 bg-transparent text-xs text-slate-900 dark:text-[#dfe2f1] font-medium placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/50 resize-none focus:outline-none leading-relaxed"
                 />
               </div>

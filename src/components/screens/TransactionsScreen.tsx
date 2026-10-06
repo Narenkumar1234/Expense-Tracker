@@ -347,13 +347,14 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
             {tx.icon}
           </span>
         </div>
-        <div>
-          <div className="flex items-center min-w-0">
-            <span className="text-sm font-semibold text-[#dfe2f1] group-hover:text-slate-900 dark:group-hover:text-white transition-colors truncate">
-              {tx.merchant}
+        <div className="min-w-0 flex-1">
+          {/* Category shown first */}
+          <div className="flex items-center min-w-0 gap-1.5">
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-900 dark:text-[#dfe2f1] group-hover:text-emerald-600 dark:group-hover:text-white transition-colors truncate">
+              {tx.category}
             </span>
             {tx.isRecurring && (
-              <span className="relative inline-flex items-center ml-1.5 shrink-0">
+              <span className="relative inline-flex items-center shrink-0">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -396,12 +397,17 @@ const TransactionRow: React.FC<TransactionRowProps> = ({ tx, onClick }) => {
               </span>
             )}
           </div>
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#bbcabf] mt-0.5">
-            <span className="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-white/5 text-[9px] font-bold tracking-wider text-slate-600 dark:text-slate-300 uppercase">
-              {tx.category}
+
+          {/* Description shown below it with ellipses if big */}
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-[#bbcabf] mt-0.5 min-w-0">
+            <span
+              className="truncate block font-medium text-slate-600 dark:text-[#bbcabf] max-w-[150px] sm:max-w-[260px]"
+              title={tx.merchant || tx.notes || tx.category}
+            >
+              {tx.merchant || tx.notes || tx.category}
             </span>
-            <span>•</span>
-            <span>{tx.time}</span>
+            <span className="shrink-0">•</span>
+            <span className="shrink-0 font-mono text-[10px]">{tx.time}</span>
           </div>
         </div>
       </div>
