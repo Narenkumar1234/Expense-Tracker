@@ -3,9 +3,48 @@ import { UserProfile, PaymentCard, BudgetItem, Transaction, ChatMessage } from '
 import { MarkdownContent } from './MarkdownContent';
 import { AURA_ASSISTANT_AVATAR } from '../data/mockData';
 import { User as FirebaseUser } from 'firebase/auth';
-import { saveChatMessage, subscribeToChatMessages } from '../firebase/service';
+import { saveChatMessage, subscribeToChatMessages, clearChatSession } from '../firebase/service';
 
 export type { ChatMessage };
+
+export interface AIModelOption {
+  id: string;
+  name: string;
+  badge: string;
+  desc: string;
+  icon: string;
+}
+
+export const AVAILABLE_MODELS: AIModelOption[] = [
+  {
+    id: 'gemini-3.8-flash',
+    name: 'Gemini 3.8 Flash',
+    badge: 'Recommended',
+    desc: 'High capacity, fast & reliable, minimizes 503 errors',
+    icon: 'bolt',
+  },
+  {
+    id: 'gemini-3.1-flash-lite',
+    name: 'Gemini Flash Lite',
+    badge: 'Lightweight',
+    desc: 'Ultra-fast & cost-efficient for quick expense logs',
+    icon: 'speed',
+  },
+  {
+    id: 'gemini-flash-latest',
+    name: 'Gemini Flash',
+    badge: 'Stable',
+    desc: 'Always current production Flash model',
+    icon: 'auto_awesome',
+  },
+  {
+    id: 'gemini-3.1-pro-preview',
+    name: 'Gemini 3.1 Pro',
+    badge: 'Deep Reasoning',
+    desc: 'Advanced multi-envelope math & budgeting analysis',
+    icon: 'psychology',
+  },
+];
 
 interface AuraChatbotProps {
   user: UserProfile;
@@ -217,11 +256,47 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
     fileName: string;
   } | null>(null);
 
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    try {
+      return localStorage.getItem('aura_preferred_model') || 'gemini-3.8-flash';
+    } catch {
+      return 'gemini-3.8-flash';
+    }
+  });
+  const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
+  const modelDropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentModelInfo = AVAILABLE_MODELS.find((m) => m.id === selectedModel) || AVAILABLE_MODELS[0];
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
   const baseTextBeforeSpeechRef = useRef('');
+
+  // Close model selector dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (modelDropdownRef.current && !modelDropdownRef.current.contains(e.target as Node)) {
+        setIsModelDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleClearChat = async () => {
+    setMessages(INITIAL_MESSAGES);
+    setShowClearConfirm(false);
+    try {
+      localStorage.removeItem(storageKey);
+      sessionStorage.removeItem('aura_chat_history');
+    } catch {}
+    if (firebaseUser) {
+      await clearChatSession(firebaseUser.uid);
+    }
+  };
 
   const compressReceiptImage = (file: File): Promise<{ base64: string; mimeType: string; previewUrl: string; fileName: string }> => {
     return new Promise((resolve, reject) => {
@@ -736,11 +811,11 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
     setIsLoading(true);
 
     try {
-      // Cost-optimized single model
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          model: selectedModel,
           messages: updatedMessages.slice(-15).map((m) => ({
             role: m.role,
             text: m.text,
@@ -794,11 +869,14 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
       console.error('Chat error:', err);
       const msgText = String(err?.message || '');
       const isMissingKey = msgText.includes('GEMINI_API_KEY');
+      const is503Overload = msgText.includes('503') || msgText.includes('overloaded') || msgText.includes('high demand');
       const errorMsg: ChatMessage = {
         id: 'msg-err-' + Date.now(),
         role: 'assistant',
         text: isMissingKey
           ? 'GEMINI_API_KEY is not configured in Vercel. Go to Vercel Project Settings > Environment Variables, add GEMINI_API_KEY, and redeploy.'
+          : is503Overload
+          ? 'The AI model is experiencing a high-demand surge. Try selecting another model from the dropdown above (e.g. Gemini 3.8 Flash) or tap send again.'
           : err?.message || 'Sorry, I encountered an issue. Please try again.',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
@@ -813,6 +891,120 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
 
   return (
     <div className="w-full max-w-md mx-auto flex flex-col h-full min-h-0 overflow-hidden px-4 pb-1 text-slate-800 dark:text-[#dfe2f1] font-sans relative">
+      {/* Top Header Bar: Reduced Size Flat Model Selector Dropdown & Flat Clear Button */}
+      <div className="flex items-center justify-between py-2 mb-1 border-b border-slate-200/60 dark:border-white/[0.04] shrink-0 relative z-30">
+        {/* Left: Compact Flat Model Selector Dropdown */}
+        <div className="relative" ref={modelDropdownRef}>
+          <button
+            type="button"
+            onClick={() => setIsModelDropdownOpen(!isModelDropdownOpen)}
+            className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-transparent hover:bg-slate-100/80 dark:hover:bg-white/[0.06] text-slate-600 hover:text-slate-900 dark:text-[#bbcabf] dark:hover:text-white text-xs font-medium transition-colors cursor-pointer focus:outline-none select-none"
+            aria-haspopup="listbox"
+            aria-expanded={isModelDropdownOpen}
+            title="Select AI Model Engine"
+          >
+            <span className="material-symbols-outlined text-[14px] leading-none text-emerald-600 dark:text-[#4edea3]">
+              {currentModelInfo?.icon || 'bolt'}
+            </span>
+            <span className="truncate max-w-[120px] sm:max-w-none leading-none">{currentModelInfo?.name || selectedModel}</span>
+            <span className={`material-symbols-outlined text-[14px] leading-none text-slate-400 transition-transform duration-150 ${isModelDropdownOpen ? 'rotate-180' : ''}`}>
+              expand_more
+            </span>
+          </button>
+
+          {isModelDropdownOpen && (
+            <div className="absolute top-full left-0 mt-1.5 w-64 bg-white dark:bg-[#13161f] border border-slate-200 dark:border-white/10 rounded-lg shadow-lg z-50 py-1 overflow-hidden animate-in fade-in zoom-in-95">
+              <div className="px-2.5 py-1.5 border-b border-slate-100 dark:border-white/[0.04] flex items-center justify-between">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">
+                  Engine
+                </span>
+                <span className="text-[9px] text-emerald-600 dark:text-[#4edea3]">Auto-fallback</span>
+              </div>
+              <div className="p-1 space-y-0.5">
+                {AVAILABLE_MODELS.map((item) => {
+                  const isSelected = item.id === selectedModel;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedModel(item.id);
+                        try {
+                          localStorage.setItem('aura_preferred_model', item.id);
+                        } catch {}
+                        setIsModelDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-1.5 rounded-md flex items-center justify-between gap-2 transition-colors cursor-pointer ${
+                        isSelected
+                          ? 'bg-slate-100/90 dark:bg-white/[0.08] text-slate-900 dark:text-white font-medium'
+                          : 'hover:bg-slate-50 dark:hover:bg-white/[0.04] text-slate-600 dark:text-[#bbcabf]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`material-symbols-outlined text-[15px] shrink-0 ${
+                            isSelected
+                              ? 'text-emerald-600 dark:text-[#4edea3]'
+                              : 'text-slate-400'
+                          }`}
+                        >
+                          {item.icon}
+                        </span>
+                        <div className="min-w-0">
+                          <div className="text-xs truncate">{item.name}</div>
+                          <div className="text-[10px] text-slate-400 truncate">{item.desc}</div>
+                        </div>
+                      </div>
+                      {isSelected && (
+                        <span className="material-symbols-outlined text-[14px] text-emerald-600 dark:text-[#4edea3] shrink-0">
+                          check
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Right: Compact Flat Clear Button */}
+        <div className="relative">
+          {showClearConfirm ? (
+            <div className="h-7 flex items-center gap-1.5 animate-in fade-in zoom-in-95">
+              <span className="text-[10px] text-slate-500 dark:text-[#bbcabf] font-medium leading-none">
+                Clear?
+              </span>
+              <button
+                type="button"
+                onClick={handleClearChat}
+                className="h-6 px-2 flex items-center justify-center rounded text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 cursor-pointer transition-colors leading-none"
+                title="Confirm clear"
+              >
+                Yes
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(false)}
+                className="h-6 px-2 flex items-center justify-center rounded text-xs text-slate-500 hover:text-slate-700 dark:text-[#bbcabf] hover:bg-slate-100 dark:hover:bg-white/[0.05] cursor-pointer transition-colors leading-none"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowClearConfirm(true)}
+              className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-transparent hover:bg-rose-50/70 dark:hover:bg-rose-500/10 text-slate-500 hover:text-rose-600 dark:text-[#bbcabf] dark:hover:text-rose-400 text-xs font-medium transition-colors cursor-pointer select-none leading-none"
+              title="Clear conversation history"
+              aria-label="Clear chat"
+            >
+              <span className="material-symbols-outlined text-[14px] leading-none">delete_sweep</span>
+              <span className="leading-none">Clear</span>
+            </button>
+          )}
+        </div>
+      </div>
       {/* Scrollable Message Thread - Plain Text & Left Avatar Layout with Full Light & Dark Support */}
       <div className="flex-1 min-h-0 overflow-y-auto py-2 space-y-4 no-scrollbar">
         {messages.map((m) => (

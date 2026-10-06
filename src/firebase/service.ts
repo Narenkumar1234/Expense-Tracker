@@ -605,3 +605,16 @@ export async function saveChatMessage(
     console.error(`Error persisting chat message for user ${userId}:`, error);
   }
 }
+
+export async function clearChatSession(userId: string): Promise<void> {
+  const sessionDocRef = doc(db, 'users', userId, 'chat', 'active');
+  try {
+    await setDoc(sessionDocRef, {
+      userId,
+      updatedAt: new Date().toISOString(),
+      messages: [],
+    });
+  } catch (error) {
+    console.error(`Error clearing chat session for user ${userId}:`, error);
+  }
+}

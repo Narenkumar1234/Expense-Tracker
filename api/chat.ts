@@ -176,8 +176,8 @@ export default async function handler(req: any, res: any) {
     });
 
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
-    const { messages, context, image } = body;
-    const selectedModel = 'gemini-3.1-flash-lite';
+    const { messages, context, image, model } = body;
+    const requestedModel = model || 'gemini-3.8-flash';
 
     const contents = (messages || []).map((m: any, idx: number) => {
       const isLastMessage = idx === (messages.length - 1);
@@ -227,21 +227,59 @@ Style:
 - Professional, concise, executive tone.
 - When calling tools, explain what was done clearly and confirm amounts in ₹ INR.`;
 
-    const response = await ai.models.generateContent({
-      model: selectedModel,
-      contents,
-      config: {
-        systemInstruction,
-        tools,
-      },
-    });
+    // Prioritize requested model; fallback to alternatives if 503 high demand occurs
+    const candidateModels = [
+      requestedModel,
+      requestedModel === 'gemini-3.8-flash' ? 'gemini-flash-latest' : 'gemini-3.8-flash',
+      'gemini-3.1-flash-lite',
+    ].filter((v, i, arr) => arr.indexOf(v) === i);
 
-    const text = response.text || '';
-    const functionCalls = response.functionCalls || [];
+    let response: any = null;
+    let usedModel = requestedModel;
+    let lastError: any = null;
+
+    for (const currentModel of candidateModels) {
+      try {
+        usedModel = currentModel;
+        response = await ai.models.generateContent({
+          model: currentModel,
+          contents,
+          config: {
+            systemInstruction,
+            tools,
+          },
+        });
+        if (response) break;
+      } catch (err: any) {
+        lastError = err;
+        const errMsg = String(err?.message || err?.status || '');
+        const isOverloaded =
+          errMsg.includes('503') ||
+          errMsg.includes('overloaded') ||
+          errMsg.includes('high demand') ||
+          errMsg.includes('UNAVAILABLE') ||
+          errMsg.includes('RESOURCE_EXHAUSTED');
+
+        if (isOverloaded) {
+          console.warn(`Model ${currentModel} encountered high demand/503. Retrying with fallback candidate...`);
+          await new Promise((resolve) => setTimeout(resolve, 350));
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    if (!response && lastError) {
+      throw lastError;
+    }
+
+    const text = response?.text || '';
+    const functionCalls = response?.functionCalls || [];
 
     return res.status(200).json({
       text,
       functionCalls,
+      modelUsed: usedModel,
     });
   } catch (error: any) {
     console.error('Gemini API Error in Vercel function:', error);
