@@ -528,7 +528,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter your name (e.g., Alex, Naren)"
                   className="w-full h-13 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-2xl pl-12 pr-4 text-base font-semibold text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none focus:border-emerald-500 dark:focus:border-[#4edea3] focus:ring-1 focus:ring-emerald-500/30 transition-all shadow-sm"
-                  autoFocus
                 />
               </div>
             </div>
@@ -617,7 +616,6 @@ export const OnboardingScreen: React.FC<OnboardingScreenProps> = ({
                   }}
                   placeholder="0"
                   className="w-full h-14 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 rounded-2xl pl-11 pr-4 font-mono font-bold text-2xl text-slate-900 dark:text-white focus:outline-none focus:border-emerald-500 dark:focus:border-[#4edea3] focus:ring-1 focus:ring-emerald-500/30 transition-all shadow-sm"
-                  autoFocus
                 />
               </div>
 

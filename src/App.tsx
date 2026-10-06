@@ -217,6 +217,21 @@ export default function App() {
         try {
           localStorage.setItem('aura_transactions', JSON.stringify(syncedTx));
         } catch {}
+
+        // Also check if any local transaction is missing from Firestore and sync it up
+        try {
+          const localCached = localStorage.getItem('aura_transactions');
+          if (localCached) {
+            const parsed: Transaction[] = JSON.parse(localCached);
+            const remoteIds = new Set(syncedTx.map((t) => t.id));
+            const unsynced = parsed.filter((t) => !remoteIds.has(t.id));
+            if (unsynced.length > 0) {
+              unsynced.forEach((tx) => {
+                addTransaction(firebaseUser.uid, tx).catch(() => {});
+              });
+            }
+          }
+        } catch {}
       } else {
         // If Firestore returned empty, check if we have local transactions to sync up
         try {

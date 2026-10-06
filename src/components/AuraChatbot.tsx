@@ -33,14 +33,6 @@ const INITIAL_MESSAGES: ChatMessage[] = [
   },
 ];
 
-const QUICK_PROMPTS = [
-  'Add ₹450 Coffee expense',
-  'Add ₹1,200 Electricity bill',
-  'Add ICICI credit card •• 3042',
-  'Set ₹15,000 Dining budget',
-  'What is my safe spending limit?',
-];
-
 const AURA_LOADING_WORDS = [
   'Loading...',
 ];
@@ -216,8 +208,116 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingPhraseIndex, setLoadingPhraseIndex] = useState(0);
+  const [isListening, setIsListening] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const baseTextBeforeSpeechRef = useRef('');
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch {
+        // ignore
+      }
+    }
+    setIsListening(false);
+  };
+
+  const startListening = () => {
+    const SpeechRecognitionConstructor =
+      typeof window !== 'undefined'
+        ? (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+        : null;
+
+    if (!SpeechRecognitionConstructor) {
+      setSpeechError('Speech recognition is not supported in this browser.');
+      setTimeout(() => setSpeechError(null), 3500);
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+
+      const recognition = new SpeechRecognitionConstructor();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = navigator.language || 'en-US';
+
+      baseTextBeforeSpeechRef.current = input;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        setSpeechError(null);
+      };
+
+      recognition.onresult = (event: any) => {
+        let finalTranscript = '';
+        let interimTranscript = '';
+        for (let i = 0; i < event.results.length; ++i) {
+          if (event.results[i].isFinal) {
+            finalTranscript += event.results[i][0].transcript;
+          } else {
+            interimTranscript += event.results[i][0].transcript;
+          }
+        }
+        const spoken = (finalTranscript || interimTranscript).trim();
+        if (spoken) {
+          const prefix = baseTextBeforeSpeechRef.current.trim();
+          setInput(prefix ? `${prefix} ${spoken}` : spoken);
+        }
+      };
+
+      recognition.onerror = (event: any) => {
+        if (event.error !== 'no-speech') {
+          const msg =
+            event.error === 'not-allowed'
+              ? 'Microphone access denied. Please allow microphone permissions.'
+              : `Voice error: ${event.error}`;
+          setSpeechError(msg);
+          setTimeout(() => setSpeechError(null), 4000);
+        }
+        setIsListening(false);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = recognition;
+      recognition.start();
+    } catch (err: any) {
+      console.error('Failed to start speech recognition:', err);
+      setSpeechError('Could not start microphone.');
+      setTimeout(() => setSpeechError(null), 3500);
+      setIsListening(false);
+    }
+  };
+
+  const toggleVoiceInput = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening();
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch {}
+      }
+    };
+  }, []);
 
   // Cycle through concise single-word status while loading
   useEffect(() => {
@@ -470,6 +570,7 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
   };
 
   const handleSend = async (textToSend?: string) => {
+    stopListening();
     const messageText = (textToSend || input).trim();
     if (!messageText || isLoading) return;
 
@@ -721,21 +822,35 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick Suggestion Chips */}
-      <div className="py-1.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0 border-t border-slate-200/80 dark:border-white/[0.04]">
-        {QUICK_PROMPTS.map((prompt, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSend(prompt)}
-            className="px-3 py-1.5 rounded-full bg-white dark:bg-[#171b26] hover:bg-slate-50 dark:hover:bg-[#202534] border border-slate-200 dark:border-white/[0.08] hover:border-emerald-500/40 text-[11px] font-medium text-slate-700 dark:text-[#bbcabf] hover:text-emerald-700 dark:hover:text-[#4edea3] shadow-xs dark:shadow-none whitespace-nowrap transition-all cursor-pointer active:scale-95 shrink-0"
-          >
-            {prompt}
-          </button>
-        ))}
-      </div>
-
       {/* Input Bar */}
-      <div className="pt-2 pb-2 shrink-0 relative z-10">
+      <div className="pt-2 pb-2 shrink-0 relative z-10 border-t border-slate-200/80 dark:border-white/[0.04]">
+        {/* Real-time Status / Speech Feedback */}
+        {isListening && (
+          <div className="mb-2 flex items-center justify-between px-1 text-xs text-rose-600 dark:text-rose-400 animate-in fade-in duration-200">
+            <span className="flex items-center gap-1.5 font-medium">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+              </span>
+              Listening... Speak clearly into your mic
+            </span>
+            <button
+              type="button"
+              onClick={stopListening}
+              className="text-[11px] font-semibold underline underline-offset-2 opacity-80 hover:opacity-100 cursor-pointer"
+            >
+              Done
+            </button>
+          </div>
+        )}
+
+        {speechError && (
+          <div className="mb-2 flex items-center gap-1.5 px-1 text-xs text-amber-700 dark:text-amber-400 animate-in fade-in duration-200">
+            <span className="material-symbols-outlined text-[15px]">info</span>
+            <span>{speechError}</span>
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -748,14 +863,45 @@ export const AuraChatbot: React.FC<AuraChatbotProps> = ({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a request (e.g. 'Add ₹1,200 Electricity bill')..."
+            placeholder={isListening ? "Listening... Speak now..." : "Type a request (e.g. 'Add ₹1,200 Electricity bill')..."}
             disabled={isLoading}
-            className="flex-1 h-11 bg-white dark:bg-[#171b26] border border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30 rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs"
+            className={`flex-1 h-11 bg-white dark:bg-[#171b26] border ${
+              isListening
+                ? 'border-rose-400 dark:border-rose-500/60 ring-2 ring-rose-500/20'
+                : 'border-slate-300 dark:border-white/10 focus:border-emerald-500 dark:focus:border-[#4edea3]/50 focus:ring-2 focus:ring-emerald-500/20 dark:focus:ring-[#4edea3]/30'
+            } rounded-xl px-3.5 text-xs text-slate-900 dark:text-[#dfe2f1] placeholder:text-slate-400 dark:placeholder:text-[#bbcabf]/40 focus:outline-none transition-all shadow-xs`}
           />
+
+          {/* Professional Flat Theme Outlined Voice Button */}
+          <button
+            type="button"
+            onClick={toggleVoiceInput}
+            disabled={isLoading}
+            className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 transition-all cursor-pointer disabled:opacity-40 relative group ${
+              isListening
+                ? 'border border-rose-500/80 bg-rose-500/10 text-rose-600 dark:text-rose-400 ring-2 ring-rose-500/20 shadow-sm'
+                : 'border border-slate-300 dark:border-white/10 bg-transparent hover:bg-slate-100/70 dark:hover:bg-white/[0.04] text-slate-700 dark:text-[#bbcabf] hover:text-slate-900 dark:hover:text-white hover:border-slate-400 dark:hover:border-white/20'
+            }`}
+            aria-label={isListening ? 'Stop voice input' : 'Voice input (Speech to text)'}
+            title={isListening ? 'Listening... Click to stop' : 'Voice input (Speech to text)'}
+          >
+            {isListening && (
+              <span className="absolute inset-0 rounded-xl border border-rose-500 animate-ping opacity-30 pointer-events-none" />
+            )}
+            <span
+              className={`material-symbols-outlined text-[19px] transition-transform ${
+                isListening ? 'animate-pulse scale-105' : 'group-hover:scale-105'
+              }`}
+            >
+              mic
+            </span>
+          </button>
+
+          {/* Send Button */}
           <button
             type="submit"
             disabled={!input.trim() || isLoading}
-            className="w-11 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-400 dark:hover:opacity-95 text-white dark:text-[#002113] font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40"
+            className="w-11 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 dark:bg-gradient-to-r dark:from-emerald-500 dark:to-teal-400 dark:hover:opacity-95 text-white dark:text-[#002113] font-bold flex items-center justify-center shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-40 shrink-0"
             aria-label="Send message"
           >
             <span className="material-symbols-outlined text-[18px]">send</span>

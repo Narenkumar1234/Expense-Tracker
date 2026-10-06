@@ -232,6 +232,7 @@ export async function addTransaction(userId: string, tx: Transaction): Promise<v
   const docPath = `users/${userId}/transactions/${tx.id}`;
   try {
     const docRef = doc(db, 'users', userId, 'transactions', tx.id);
+    const rootRef = doc(db, 'transactions', tx.id);
     const payload: Record<string, any> = {
       id: tx.id,
       userId,
@@ -258,7 +259,15 @@ export async function addTransaction(userId: string, tx: Transaction): Promise<v
     if (tx.recurringFrequency) {
       payload.recurringFrequency = tx.recurringFrequency;
     }
+    // Write to user subcollection
     await setDoc(docRef, payload);
+
+    // Also write to root-level transactions collection for immediate visibility in Firebase Console
+    try {
+      await setDoc(rootRef, payload);
+    } catch (rootErr) {
+      console.warn('Root-level transaction mirror notice:', rootErr);
+    }
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, docPath);
   }
@@ -268,7 +277,11 @@ export async function deleteTransaction(userId: string, txId: string): Promise<v
   const docPath = `users/${userId}/transactions/${txId}`;
   try {
     const docRef = doc(db, 'users', userId, 'transactions', txId);
+    const rootRef = doc(db, 'transactions', txId);
     await deleteDoc(docRef);
+    try {
+      await deleteDoc(rootRef);
+    } catch {}
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }
@@ -314,7 +327,8 @@ export async function addCard(userId: string, card: PaymentCard): Promise<void> 
   const docPath = `users/${userId}/cards/${card.id}`;
   try {
     const docRef = doc(db, 'users', userId, 'cards', card.id);
-    await setDoc(docRef, {
+    const rootRef = doc(db, 'cards', card.id);
+    const payload = {
       id: card.id,
       userId,
       bankName: card.bankName,
@@ -327,9 +341,18 @@ export async function addCard(userId: string, card: PaymentCard): Promise<void> 
       expiry: card.expiry || '12/29',
       balance: card.availableBalance || 0,
       availableBalance: card.availableBalance || 0,
+      creditLimit: card.creditLimit || 250000,
+      unbilledSpend: card.unbilledSpend || 0,
+      statementDate: card.statementDate || '',
+      dueDate: card.dueDate || '',
+      colorTheme: card.colorTheme || '',
       isDefault: Boolean(card.isDefault),
       createdAt: new Date().toISOString(),
-    });
+    };
+    await setDoc(docRef, payload);
+    try {
+      await setDoc(rootRef, payload);
+    } catch {}
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, docPath);
   }
@@ -339,7 +362,11 @@ export async function deleteCard(userId: string, cardId: string): Promise<void> 
   const docPath = `users/${userId}/cards/${cardId}`;
   try {
     const docRef = doc(db, 'users', userId, 'cards', cardId);
+    const rootRef = doc(db, 'cards', cardId);
     await deleteDoc(docRef);
+    try {
+      await deleteDoc(rootRef);
+    } catch {}
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }
@@ -363,8 +390,8 @@ export function subscribeToBudgets(
           id: data.id || d.id,
           name: data.name || data.category || 'Category',
           category: data.category || 'GENERAL',
-          allocated: Number(data.allocatedAmount) || 0,
-          spent: Number(data.spentAmount) || 0,
+          allocated: Number(data.allocatedAmount ?? data.allocated ?? 0),
+          spent: Number(data.spentAmount ?? data.spent ?? 0),
           statusText: data.statusText || 'Active',
           statusType: data.statusType || 'normal',
           icon: data.icon || 'category',
@@ -383,19 +410,26 @@ export async function addBudget(userId: string, budget: BudgetItem): Promise<voi
   const docPath = `users/${userId}/budgets/${budget.id}`;
   try {
     const docRef = doc(db, 'users', userId, 'budgets', budget.id);
-    await setDoc(docRef, {
+    const rootRef = doc(db, 'budgets', budget.id);
+    const payload = {
       id: budget.id,
       userId,
       name: budget.name,
       category: budget.category,
+      allocated: budget.allocated || 0,
       allocatedAmount: budget.allocated || 0,
+      spent: budget.spent || 0,
       spentAmount: budget.spent || 0,
       icon: budget.icon || 'category',
       color: budget.color || '#4edea3',
       statusText: budget.statusText || 'Fresh budget',
       statusType: budget.statusType || 'normal',
       createdAt: new Date().toISOString(),
-    });
+    };
+    await setDoc(docRef, payload);
+    try {
+      await setDoc(rootRef, payload);
+    } catch {}
   } catch (error) {
     handleFirestoreError(error, OperationType.CREATE, docPath);
   }
@@ -405,7 +439,11 @@ export async function deleteBudget(userId: string, budgetId: string): Promise<vo
   const docPath = `users/${userId}/budgets/${budgetId}`;
   try {
     const docRef = doc(db, 'users', userId, 'budgets', budgetId);
+    const rootRef = doc(db, 'budgets', budgetId);
     await deleteDoc(docRef);
+    try {
+      await deleteDoc(rootRef);
+    } catch {}
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, docPath);
   }

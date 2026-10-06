@@ -29,7 +29,7 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   const [txType, setTxType] = useState<'expense' | 'income'>(initialTxType);
   const [currency, setCurrency] = useState<'INR (₹)' | 'USD ($)' | 'EUR (€)'>('INR (₹)');
   const [amountString, setAmountString] = useState(
-    editTransaction ? Math.abs(editTransaction.amount).toString() : '845.00'
+    editTransaction ? Math.abs(editTransaction.amount).toString() : ''
   );
 
   const initialCat = () => {
@@ -156,8 +156,9 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
   };
 
   const handleSave = () => {
-    setIsSaving(true);
     const numAmount = parseFloat(amountString) || 0;
+    if (numAmount <= 0) return;
+    setIsSaving(true);
     const finalAmount = txType === 'expense' ? -Math.abs(numAmount) : Math.abs(numAmount);
     const selectedCard = cards.find((c) => c.id === selectedCardId);
 
@@ -336,7 +337,6 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
                   setAmountString(val);
                 }}
                 placeholder="0.00"
-                autoFocus
                 className="bg-transparent text-center font-mono font-bold text-4xl sm:text-5xl text-slate-900 dark:text-[#dfe2f1] w-48 sm:w-56 focus:outline-none border-b-2 border-transparent focus:border-emerald-500 dark:focus:border-[#4edea3] transition-colors"
               />
             </div>
@@ -623,8 +623,8 @@ export const QuickAddModal: React.FC<QuickAddModalProps> = ({
           <div className="pt-2">
             <button
               onClick={handleSave}
-              disabled={isSaving}
-              className={`w-full py-3.5 rounded-xl font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer ${
+              disabled={isSaving || !amountString || parseFloat(amountString) <= 0}
+              className={`w-full py-3.5 rounded-xl font-bold text-sm tracking-wide flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
                 txType === 'expense'
                   ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-md dark:bg-[#ff7886] dark:text-[#67001b] dark:shadow-[0_0_20px_rgba(255,120,134,0.35)]'
                   : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md dark:bg-[#10b981] dark:text-[#002113] dark:shadow-[0_0_20px_rgba(16,185,129,0.35)]'

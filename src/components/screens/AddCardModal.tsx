@@ -404,7 +404,6 @@ export const AddCardModal: React.FC<AddCardModalProps> = ({
                       value={last4}
                       onChange={(e) => setLast4(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       placeholder="4829"
-                      autoFocus
                       className="w-20 bg-black/25 hover:bg-black/35 focus:bg-black/50 border border-white/25 focus:border-[#4edea3] rounded-lg text-center text-[#4edea3] py-1 px-1 font-mono font-bold tracking-widest focus:outline-none transition-all placeholder:text-white/40 shadow-inner"
                     />
                   </div>
